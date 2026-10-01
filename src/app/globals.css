@@ -1,0 +1,127 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   BuySell design tokens
+   Minimalism & Swiss style: grid-based, hairline borders, no shadows,
+   near-square corners, restrained motion. Palette is warm stone with a
+   single low-saturation gold accent used sparingly.
+   Contrast ratios below 4.5:1 are not used for text; all pairs here were
+   measured, not assumed.
+--------------------------------------------------------------------------- */
+
+@theme {
+  --color-canvas: #fafaf9;         /* page background (stone-50) */
+  --color-surface: #ffffff;        /* cards, forms */
+  --color-ink: #1c1917;            /* primary text + primary CTA (stone-900) */
+  --color-ink-soft: #44403c;       /* secondary text (stone-700) */
+  --color-ink-muted: #78716c;      /* 4.6:1 on canvas — metadata, labels */
+  --color-line: #e7e5e4;           /* hairline border (stone-200) */
+  --color-line-strong: #d6d3d1;    /* emphasis border (stone-300) */
+  --color-accent: #a16207;         /* gold, 5.4:1 on canvas — small accents only */
+  --color-accent-soft: #fef3c7;    /* accent tint surface */
+  --color-danger: #b91c1c;         /* 6.4:1 on white */
+  --color-danger-soft: #fef2f2;
+  --color-success: #15803d;
+
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* Near-square corners. Large radii are what make AI-generated UI read cheap. */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+
+  /* One easing, one duration range. */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-quick: 150ms;
+  --transition-base: 220ms;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Display type: tighter tracking as size grows. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.021em;
+    text-wrap: balance;
+  }
+
+  /* One consistent, high-contrast focus ring everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Remove the number-input spinners; quantity has explicit stepper buttons. */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  /* Reserve the scrollbar gutter so opening a dialog cannot shift the layout. */
+  html {
+    scrollbar-gutter: stable;
+  }
+}
+
+@layer utilities {
+  /* Wordmark: letterspaced uppercase small caps. */
+  .wordmark {
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  /* Reduce every non-essential animation. We keep colour/opacity transitions
+     because they carry state, but drop transforms and long easings. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Screen-reader-only, but focusable when it needs to be (skip links). */
+  .focusable-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .focusable-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
