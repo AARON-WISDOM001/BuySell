@@ -19,6 +19,11 @@ import { getCartSnapshot } from '@/lib/cart-storage';
  * cart unchanged once MAX_LINES is reached, and `writeCart` swallows storage
  * failures. So the confirmation is earned by comparing the line quantity
  * before and after the write rather than assuming it landed.
+ *
+ * The accessible name does not change when the state does. Rewriting the label
+ * of the control that currently holds focus is how a confirmation gets lost
+ * instead of announced; the visible text and icon carry the state, and the
+ * status region below is what actually announces it.
  */
 export function QuickAdd({
   productId,
@@ -74,7 +79,7 @@ export function QuickAdd({
         type="button"
         onClick={handleAdd}
         disabled={blocked}
-        aria-label={state === 'added' ? `${productName} added to cart` : `Add ${productName} to cart`}
+        aria-label={blocked ? `${productName} is out of stock` : `Add ${productName} to cart`}
         className="inline-flex h-8 items-center gap-1.5 rounded-xs border border-line-strong bg-surface px-2.5 text-[13px] font-medium text-ink transition-colors duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-ink hover:bg-canvas disabled:pointer-events-none disabled:opacity-45"
       >
         {state === 'error' ? (
