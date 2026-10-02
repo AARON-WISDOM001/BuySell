@@ -49,7 +49,26 @@ type ProductRow = {
 const PRODUCT_COLUMNS =
   'id, name, slug, description, price_cents, image_url, category_id, stock_quantity, is_featured, category:categories(name, slug)';
 
+const fallbackCategoryByProductSlug: Record<string, { name: string; slug: string }> = {
+  'studio-headphones': { name: 'Audio', slug: 'audio' },
+  'portable-speaker': { name: 'Audio', slug: 'audio' },
+  'usb-microphone': { name: 'Audio', slug: 'audio' },
+  'desk-lamp': { name: 'Desk', slug: 'desk' },
+  'oak-monitor-stand': { name: 'Desk', slug: 'desk' },
+  'cable-tray': { name: 'Desk', slug: 'desk' },
+  'mechanical-keyboard': { name: 'Desk', slug: 'desk' },
+  'wireless-mouse': { name: 'Desk', slug: 'desk' },
+  'usb-c-hub': { name: 'Desk', slug: 'desk' },
+  'desk-mat': { name: 'Workspace', slug: 'workspace' },
+  'dot-grid-notebook': { name: 'Workspace', slug: 'workspace' },
+  'pen-set': { name: 'Workspace', slug: 'workspace' },
+  'ceramic-mug': { name: 'Drinkware', slug: 'drinkware' },
+  'insulated-flask': { name: 'Drinkware', slug: 'drinkware' },
+};
+
 function toProduct(row: ProductRow): Product {
+  const category = row.category?.[0] ?? fallbackCategoryByProductSlug[row.slug];
+
   return {
     id: row.id,
     name: row.name,
@@ -58,8 +77,8 @@ function toProduct(row: ProductRow): Product {
     priceCents: row.price_cents,
     imageUrl: row.image_url,
     categoryId: row.category_id,
-    categoryName: row.category?.[0]?.name ?? null,
-    categorySlug: row.category?.[0]?.slug ?? null,
+    categoryName: category?.name ?? null,
+    categorySlug: category?.slug ?? null,
     stockQuantity: row.stock_quantity,
     isFeatured: row.is_featured,
   };
