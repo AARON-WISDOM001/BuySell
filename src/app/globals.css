@@ -22,6 +22,7 @@
   --color-danger: #b91c1c;         /* 6.4:1 on white */
   --color-danger-soft: #fef2f2;
   --color-success: #15803d;
+  --color-success-soft: #f0fdf4;
 
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
 
@@ -34,6 +35,27 @@
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --transition-quick: 150ms;
   --transition-base: 220ms;
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --color-canvas: #171613;
+  --color-surface: #211f1b;
+  --color-ink: #f5f5f4;
+  --color-ink-soft: #d6d3d1;
+  --color-ink-muted: #a8a29e;
+  --color-line: #3d3933;
+  --color-line-strong: #57534e;
+  --color-accent: #fbbf24;
+  --color-accent-soft: #422006;
+  --color-danger: #fca5a5;
+  --color-danger-soft: #450a0a;
+  --color-success: #86efac;
+  --color-success-soft: #052e16;
 }
 
 @layer base {
@@ -52,6 +74,7 @@
     font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    transition: background-color var(--transition-base) ease, color var(--transition-base) ease;
   }
 
   /* Display type: tighter tracking as size grows. */
@@ -87,6 +110,18 @@
   .wordmark {
     letter-spacing: 0.16em;
     text-transform: uppercase;
+  }
+
+  .product-photograph {
+    transition:
+      transform var(--transition-base) var(--ease-out-soft),
+      opacity var(--transition-quick) ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-photograph {
+      transition: none;
+    }
   }
 
   /* Reduce every non-essential animation. We keep colour/opacity transitions

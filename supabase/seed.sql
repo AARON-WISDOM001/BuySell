@@ -3,7 +3,7 @@
 -- Idempotent: re-running will not duplicate anything, so it is safe to run
 -- after the initial migration. Run this AFTER 0001_init.sql.
 --
--- Prices are in cents. image_url points at local artwork in /public/products so
+-- Prices are in cents. image_url points at local photos in /public/products so
 -- the storefront does not depend on a third-party image host.
 
 insert into public.categories (name, slug) values
@@ -69,10 +69,11 @@ select
   p.slug,
   p.description,
   p.price_cents,
-  '/products/' || p.image_slug || '.svg',
+  '/products/' || p.image_slug || '.jpg',
   c.id,
   p.stock_quantity,
   p.is_featured
 from p
 join public.categories c on c.slug = p.category_slug
-on conflict (slug) do nothing;
+on conflict (slug) do update
+set image_url = excluded.image_url;

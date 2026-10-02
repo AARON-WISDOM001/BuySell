@@ -33,7 +33,7 @@ export function ProductCard({
             fill
             priority={priority}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-opacity duration-200 group-hover:opacity-90"
+            className="product-photograph object-cover group-hover:scale-[1.025] group-focus-visible:scale-[1.025] motion-reduce:transform-none"
           />
           {outOfStock ? (
             <span className="absolute left-3 top-3 rounded-xs bg-ink px-2 py-1 text-[11px] font-medium tracking-[0.06em] text-white uppercase">

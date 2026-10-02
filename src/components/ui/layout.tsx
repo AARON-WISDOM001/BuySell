@@ -134,9 +134,9 @@ export function Notice({
 }) {
   const tones = {
     info: 'border-line bg-surface text-ink-soft',
-    warning: 'border-[#fde68a] bg-accent-soft text-[#78350f]',
-    danger: 'border-[#fecaca] bg-danger-soft text-danger',
-    success: 'border-[#bbf7d0] bg-[#f0fdf4] text-[#14532d]',
+    warning: 'border-accent-soft bg-accent-soft text-accent',
+    danger: 'border-danger-soft bg-danger-soft text-danger',
+    success: 'border-success/30 bg-success-soft text-success',
   } as const;
 
   return (

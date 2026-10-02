@@ -52,8 +52,5 @@ export async function getUser() {
 export async function requireUser(returnTo: string): Promise<User> {
   const user = await getUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(returnTo)}`);
-  // `redirect` returns never, so this is unreachable. The throw satisfies the
-  // compiler without a non-null assertion, and keeps the failure loud if the
-  // behaviour of `redirect` ever changes.
-  throw new Error('requireUser reached without a session');
+  return user;
 }

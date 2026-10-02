@@ -26,7 +26,7 @@ const product = (
   productId,
   name: `Product ${productId}`,
   slug: productId,
-  imageUrl: `/products/${productId}.svg`,
+  imageUrl: `/products/${productId}.jpg`,
   unitPriceCents,
   quantity,
   stockQuantity,

@@ -72,14 +72,14 @@ export default async function ProductPage({
 
       <Container size="wide" className="py-8 sm:py-12">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16">
-          <div className="relative aspect-4/5 overflow-hidden rounded-xs border border-line bg-canvas sm:aspect-square lg:aspect-4/5">
+          <div className="group relative aspect-4/5 overflow-hidden rounded-xs border border-line bg-canvas sm:aspect-square lg:aspect-4/5">
             <Image
               src={product.imageUrl}
               alt={product.name}
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
+              className="product-photograph object-cover group-hover:scale-[1.025] motion-reduce:transform-none"
             />
           </div>
 

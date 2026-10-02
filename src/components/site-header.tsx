@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { LogOut, UserRound } from 'lucide-react';
 import { CartButton } from '@/components/cart/cart-button';
 import { NavLinks } from '@/components/nav-links';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { storeName } from '@/lib/env';
 import { signOut } from '@/app/actions/auth';
 
@@ -70,6 +71,7 @@ export function SiteHeader({ user }: { user: User | null }) {
             </Link>
           )}
 
+          <ThemeToggle />
           <CartButton />
         </div>
       </div>

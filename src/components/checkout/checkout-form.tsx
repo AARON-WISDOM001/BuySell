@@ -153,7 +153,7 @@ export function CheckoutForm({
                 tabIndex={-1}
                 role="alert"
                 aria-labelledby="checkout-error-title"
-                className="mb-8 rounded-xs border border-[#fecaca] bg-danger-soft px-5 py-4 focus-visible:outline-2 focus-visible:outline-danger"
+                className="mb-8 rounded-xs border border-danger-soft bg-danger-soft px-5 py-4 focus-visible:outline-2 focus-visible:outline-danger"
               >
                 <h2 id="checkout-error-title" className="text-sm font-semibold text-danger">
                   There is a problem

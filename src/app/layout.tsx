@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans } from 'next/font/google';
+import Script from 'next/script';
 import { CartProvider } from '@/components/cart/cart-context';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
@@ -51,7 +52,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     if (!missing) throw error;
 
     return (
-      <html lang="en" className={dmSans.variable}>
+      <html lang="en" className={dmSans.variable} suppressHydrationWarning>
+        <head>
+          <Script src="/theme-bootstrap.js" strategy="beforeInteractive" />
+        </head>
         <body className="min-h-screen">
           <NotConfigured missingVariable={error.message} />
         </body>
@@ -60,7 +64,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <html lang="en" className={dmSans.variable}>
+    <html lang="en" className={dmSans.variable} suppressHydrationWarning>
+      <head>
+        <Script src="/theme-bootstrap.js" strategy="beforeInteractive" />
+      </head>
       <body className="flex min-h-screen flex-col">
         <a
           href="#main"

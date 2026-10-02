@@ -72,7 +72,7 @@ export default async function OrderPage({
 
       {justPlaced ? (
         <div className="mb-10 flex flex-col items-start gap-4 border-b border-line pb-10">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#f0fdf4] text-success">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-success-soft text-success">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="m5 13 4 4L19 7"
