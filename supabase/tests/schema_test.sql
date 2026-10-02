@@ -163,14 +163,20 @@ $$;
 -- ---------------------------------------------------------------------------
 -- RLS isolation: Bob must not see or touch Alice's data
 -- ---------------------------------------------------------------------------
+-- The catalog count is recorded while still superuser, then compared after
+-- dropping to the authenticated role. Asserting it against itself would pass
+-- even if a policy hid every product, which is the exact failure this guards.
+select set_config('test.catalog_rows', (select count(*) from public.products)::text, false);
+
 set role authenticated;
 set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
 
 select assert_eq('Bob sees 0 of Alice orders', (select count(*) from public.orders)::text, 0::text);
 select assert_eq('Bob sees 0 of Alice order_items', (select count(*) from public.order_items)::text, 0::text);
-select assert_eq('Bob can still read the catalog',
-  (select count(*) from public.products)::text,
-  (select count(*) from public.products)::text);
+select assert_eq('Bob reads the whole catalog, not a filtered subset',
+  (select count(*) from public.products)::text, current_setting('test.catalog_rows'));
+select assert_eq('Bob can read the test products specifically',
+  (select count(*) from public.products where slug in ('studio-headphones-test','desk-lamp-test'))::text, 2::text);
 select assert_eq('Bob can read his own profile', (select count(*) from public.profiles)::text, 1::text);
 select assert_eq('Bob cannot see Alice profile row', (
   select count(*) from public.profiles where id = '11111111-1111-1111-1111-111111111111')::text, 0::text);
