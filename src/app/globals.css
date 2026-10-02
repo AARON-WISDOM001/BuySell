@@ -19,6 +19,9 @@
   --color-line-strong: #d6d3d1;    /* emphasis border (stone-300) */
   --color-accent: #a16207;         /* gold, 5.4:1 on canvas — small accents only */
   --color-accent-soft: #fef3c7;    /* accent tint surface */
+  /* Text on accent-soft. The gold accent itself is only 4.42:1 here, which
+     fails AA for body copy, so badges and notices need this darker step. */
+  --color-accent-ink: #78350f;
   --color-danger: #b91c1c;         /* 6.4:1 on white */
   --color-danger-soft: #fef2f2;
   --color-success: #15803d;
@@ -52,6 +55,7 @@
   --color-line-strong: #57534e;
   --color-accent: #fbbf24;
   --color-accent-soft: #422006;
+  --color-accent-ink: #fbbf24;
   --color-danger: #fca5a5;
   --color-danger-soft: #450a0a;
   --color-success: #86efac;

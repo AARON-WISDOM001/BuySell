@@ -181,7 +181,7 @@ export default async function OrderPage({
           <DataRow
             label="Status"
             value={
-              <span className="rounded-xs bg-accent-soft px-2 py-1 text-[13px] text-accent">
+              <span className="rounded-xs bg-accent-soft px-2 py-1 text-[13px] text-accent-ink">
                 {order.status.replace(/_/g, ' ')}
               </span>
             }
