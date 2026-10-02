@@ -24,7 +24,8 @@ export default async function ShopPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const search = typeof params.q === 'string' ? params.q : undefined;
+  const rawSearch = typeof params.q === 'string' ? params.q : undefined;
+  const search = rawSearch?.trim() || undefined;
   const category = typeof params.category === 'string' ? params.category : undefined;
   const sort = typeof params.sort === 'string' ? params.sort : undefined;
 
