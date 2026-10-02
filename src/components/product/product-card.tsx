@@ -1,14 +1,21 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CurrencyAmount } from '@/components/currency-provider';
+import { QuickAdd } from '@/components/product/quick-add';
 import type { Product } from '@/lib/catalog';
 
 /**
  * Product card.
  *
- * The whole image+name block is one link, and the price sits outside it, so the
- * "Add to cart" control is never nested inside an anchor. Nesting interactive
- * elements is the most common accessibility failure in a product grid.
+ * The whole image+name block is one link; the price and Quick Add sit outside
+ * it. Nesting a button inside an anchor is the most common accessibility
+ * failure in a product grid, and it is also what would make Quick Add navigate
+ * to the product page instead of adding.
+ *
+ * Quick Add is always present but transparent on pointer devices, revealing on
+ * hover or keyboard focus of anything in the card. It is not `display: none`
+ * when hidden, so it stays reachable by keyboard and in the tab order. Below
+ * `sm` it is always opaque, because a touch device has no hover to reveal it.
  */
 export function ProductCard({
   product,
@@ -56,10 +63,19 @@ export function ProductCard({
         </div>
       </Link>
 
-      <div className="mt-1 flex items-baseline justify-between gap-3">
+      <div className="mt-1 flex min-h-8 items-center justify-between gap-3">
         <p className="text-[15px] tabular-nums text-ink">
           <CurrencyAmount cents={product.priceCents} />
         </p>
+
+        {/* Outside the product link, so Quick Add never navigates. */}
+        <QuickAdd
+          productId={product.id}
+          productName={product.name}
+          maxQuantity={product.stockQuantity}
+          disabled={outOfStock}
+          className="shrink-0 transition-opacity duration-200 ease-out-soft motion-reduce:transition-none sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+        />
       </div>
     </article>
   );

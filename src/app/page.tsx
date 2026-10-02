@@ -62,11 +62,8 @@ export default async function ShopPage({
                   ? `Results for “${search}”`
                   : 'Everything in stock'
             }
-            description={
-              isFiltered
-                ? `${products.length} ${products.length === 1 ? 'product' : 'products'}`
-                : undefined
-            }
+            description={`${products.length} ${products.length === 1 ? 'product' : 'products'}`}
+            live
             action={
               isFiltered ? (
                 <Link

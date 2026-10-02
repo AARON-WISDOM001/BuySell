@@ -34,12 +34,15 @@ export function SectionHeading({
   title,
   description,
   action,
+  live = false,
   as: Tag = 'h2',
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   action?: ReactNode;
+  /** Announce description changes, for counts that change under the user. */
+  live?: boolean;
   as?: 'h1' | 'h2' | 'h3';
 }) {
   return (
@@ -52,7 +55,12 @@ export function SectionHeading({
         ) : null}
         <Tag className="text-2xl font-semibold sm:text-[28px]">{title}</Tag>
         {description ? (
-          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{description}</p>
+          <p
+            className="mt-3 text-[15px] leading-relaxed text-ink-soft"
+            {...(live ? { role: 'status', 'aria-live': 'polite' } : {})}
+          >
+            {description}
+          </p>
         ) : null}
       </div>
       {action}
