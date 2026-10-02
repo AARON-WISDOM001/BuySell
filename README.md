@@ -57,11 +57,18 @@ Or paste both into the Supabase SQL editor, in order:
 
 ### Google OAuth
 
+`NEXT_PUBLIC_SITE_URL` is required for sign-in. Without it the sign-in button
+refuses to start OAuth rather than sending a relative redirect that would return
+the shopper to the wrong host.
+
 1. In Google Cloud, create an OAuth 2.0 Web client.
 2. Add `<NEXT_PUBLIC_SITE_URL>/auth/callback` as an authorised redirect URI.
 3. In Supabase → Authentication → Providers → Google, enable it and paste the
    client ID and secret.
-4. Set the Site URL in Supabase to your deployed origin.
+4. In Supabase → Authentication → URL Configuration, set the **Site URL** to
+   your deployed origin and add `<NEXT_PUBLIC_SITE_URL>/auth/callback` to the
+   **Redirect URLs** allowlist. Both are required; an empty allowlist accepts
+   the callback today but is not a deliberate configuration.
 
 ## Commands
 

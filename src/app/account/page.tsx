@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { requireUser } from '@/lib/supabase/server';
 import { createClient } from '@/lib/supabase/server';
 import { Container, DataRow, PageHeader } from '@/components/ui/layout';
+import { ProfileForm } from '@/components/account/profile-form';
 import { formatCents } from '@/lib/money';
 
 export const metadata: Metadata = { title: 'Account' };
@@ -39,9 +40,13 @@ export default async function AccountPage() {
 
   return (
     <Container size="narrow" className="py-12 sm:py-16">
-      <PageHeader eyebrow="Account" title="Your orders" />
+      <PageHeader eyebrow="Account" title="Your account" />
 
-      <div className="mt-8 flex items-center gap-4 border border-line bg-surface px-5 py-5">
+      <h2 className="mt-10 text-[13px] font-medium uppercase tracking-[0.1em] text-ink-muted">
+        Profile
+      </h2>
+
+      <div className="mt-4 flex items-center gap-4 border border-line bg-surface px-5 py-5">
         {profile?.avatar_url ? (
           <Image
             src={profile.avatar_url}
@@ -63,6 +68,8 @@ export default async function AccountPage() {
           <p className="truncate text-[13px] text-ink-muted">{user.email}</p>
         </div>
       </div>
+
+      <ProfileForm currentName={profile?.full_name ?? ''} />
 
       <h2 className="mt-12 text-[13px] font-medium uppercase tracking-[0.1em] text-ink-muted">
         Order history

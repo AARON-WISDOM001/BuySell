@@ -22,6 +22,7 @@ export default async function LoginPage({
   const params = await searchParams;
   const next = safeNext(params.next);
   const oauthFailed = params.error === 'oauth';
+  const misconfigured = params.error === 'config';
 
   return (
     <Container size="narrow" className="py-16 sm:py-24">
@@ -32,7 +33,14 @@ export default async function LoginPage({
           and nothing to lose if you stop using it.
         </p>
 
-        {oauthFailed ? (
+        {misconfigured ? (
+          <div className="mt-8">
+            <Notice tone="danger" title="This site is not fully configured">
+              Sign-in is unavailable because the site address is missing or invalid. If that is
+              unexpected, this is a deployment problem — set the public site URL and try again.
+            </Notice>
+          </div>
+        ) : oauthFailed ? (
           <div className="mt-8">
             <Notice tone="danger" title="Sign-in did not complete">
               Google did not return us to the site. This is usually a redirect URL that has not been

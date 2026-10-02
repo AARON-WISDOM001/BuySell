@@ -65,6 +65,35 @@ export const cartSubmissionSchema = z.object({
 export type CartSubmission = z.infer<typeof cartSubmissionSchema>;
 
 /**
+ * Profile edit.
+ *
+ * Only the display name is user-writable — `email` and `id` are excluded at the
+ * database level by column grants, not here, so a form change cannot widen what
+ * a user is able to rewrite.
+ */
+export const profileSchema = z.object({
+  fullName: trimmed('Name', 2, 120),
+});
+
+export type ProfileInput = z.infer<typeof profileSchema>;
+
+/** Form state returned by `updateProfile`. */
+export type ProfileActionState = {
+  status: 'idle' | 'error' | 'success';
+  message?: string;
+  fieldErrors?: Record<string, string>;
+  errors?: { field: string; message: string }[];
+};
+
+/**
+ * Initial state for the profile form's `useActionState`.
+ *
+ * Lives here rather than in the action module because a `"use server"` file may
+ * only export async functions.
+ */
+export const initialProfileState: ProfileActionState = { status: 'idle' };
+
+/**
  * Flatten a ZodError into `{ fieldName: firstMessage }` for inline rendering,
  * plus a list for the focusable error summary at the top of the form.
  */

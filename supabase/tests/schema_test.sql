@@ -261,6 +261,26 @@ begin
 end;
 $$;
 
+-- The positive case has to assert the value actually persisted, not just that
+-- a row was matched. A policy that let the UPDATE through but had a WITH CHECK
+-- that silently discarded the change would pass a row-count-only assertion and
+-- leave the user staring at a "Saved" confirmation that never saved.
+select assert_eq('renamed value persisted, not silently discarded',
+  (select full_name from public.profiles where id = '22222222-2222-2222-2222-222222222222')::text,
+  'Bob Renamed'::text);
+
+-- A user must not be able to widen their own row with a forged id. The
+-- ownership check is auth.uid() = id, not anything the client sends.
+do $$
+declare n int;
+begin
+  update public.profiles set full_name = 'Stolen'
+    where id = '11111111-1111-1111-1111-111111111111';
+  get diagnostics n = row_count;
+  perform assert_rows('renaming Alice while acting as Bob is blocked', n);
+end;
+$$;
+
 
 -- ---------------------------------------------------------------------------
 -- Email bookkeeping is scoped to the caller's own order

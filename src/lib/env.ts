@@ -45,6 +45,38 @@ export function siteUrl(): string {
   );
 }
 
+/**
+ * Is this an origin we can safely send a user to?
+ *
+ * Only absolute http(s) URLs pass. A relative or empty value would be handed to
+ * Supabase as `redirect_uri`, which resolves it against its own Site URL and
+ * bounces the shopper to the wrong host — or nowhere. `javascript:` and
+ * `data:` are rejected for the same reason: this value ends up in a redirect.
+ */
+export function isPublicOrigin(value: string | undefined | null): boolean {
+  if (!value) return false;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'https:' || protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The configured public origin, or null when it is missing or malformed.
+ *
+ * Separate from `siteUrl()` on purpose: that one falls back to localhost so
+ * email links still render during local development. A sign-in redirect has a
+ * stricter requirement — it must name the real host — so it uses this and fails
+ * closed instead of guessing.
+ */
+export function publicOrigin(): string | null {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!isPublicOrigin(raw)) return null;
+  return (raw as string).replace(/\/$/, '');
+}
+
 export function storeName(): string {
   return process.env.NEXT_PUBLIC_STORE_NAME?.trim() || 'BuySell';
 }
