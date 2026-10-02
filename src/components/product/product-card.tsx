@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatCents } from '@/lib/money';
+import { CurrencyAmount } from '@/components/currency-provider';
 import type { Product } from '@/lib/catalog';
 
 /**
@@ -57,7 +57,9 @@ export function ProductCard({
       </Link>
 
       <div className="mt-1 flex items-baseline justify-between gap-3">
-        <p className="text-[15px] tabular-nums text-ink">{formatCents(product.priceCents)}</p>
+        <p className="text-[15px] tabular-nums text-ink">
+          <CurrencyAmount cents={product.priceCents} />
+        </p>
       </div>
     </article>
   );

@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/supabase/server';
 import { createClient } from '@/lib/supabase/server';
 import { Container, DataRow, PageHeader } from '@/components/ui/layout';
 import { ProfileForm } from '@/components/account/profile-form';
-import { formatCents } from '@/lib/money';
+import { CurrencyAmount } from '@/components/currency-provider';
 
 export const metadata: Metadata = { title: 'Account' };
 
@@ -112,7 +112,9 @@ export default async function AccountPage() {
                   {order.status.replace(/_/g, ' ')}
                 </span>
 
-                <p className="text-sm tabular-nums text-ink">{formatCents(order.total_cents)}</p>
+                <p className="text-sm tabular-nums text-ink">
+                  <CurrencyAmount cents={order.total_cents} />
+                </p>
               </Link>
             </li>
           ))}

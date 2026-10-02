@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/components/cart/cart-context';
+import { CurrencyDisclosure, useCurrencyFormatter } from '@/components/currency-provider';
 import { priceCartAction, type PricedCartResponse } from '@/app/actions/cart';
 import { placeOrder } from '@/app/actions/orders';
 import { initialOrderState, type OrderActionState } from '@/lib/validation';
@@ -11,7 +12,6 @@ import { signInWithGoogle } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Container, DataRow, Notice } from '@/components/ui/layout';
-import { formatCents } from '@/lib/money';
 import { FREE_SHIPPING_THRESHOLD_CENTS, STANDARD_SHIPPING_CENTS } from '@/lib/env';
 
 /**
@@ -29,6 +29,7 @@ export function CheckoutForm({
   next: string;
 }) {
   const { lines, isReady } = useCart();
+  const formatMoney = useCurrencyFormatter();
   const [priced, setPriced] = useState<PricedCartResponse | null>(null);
   const [state, formAction, pending] = useActionState<OrderActionState, FormData>(
     placeOrder,
@@ -286,11 +287,11 @@ export function CheckoutForm({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-medium text-ink">{line.name}</p>
                       <p className="text-[13px] tabular-nums text-ink-muted">
-                        {formatCents(line.unitPriceCents)} each
+                        {formatMoney(line.unitPriceCents)} each
                       </p>
                     </div>
                     <p className="text-[13px] tabular-nums text-ink">
-                      {formatCents(line.unitPriceCents * line.quantity)}
+                      {formatMoney(line.unitPriceCents * line.quantity)}
                     </p>
                   </li>
                 ))}
@@ -302,19 +303,21 @@ export function CheckoutForm({
               <dl className="mt-5">
                 <DataRow
                   label="Subtotal"
-                  value={priced ? formatCents(priced.subtotalCents) : '—'}
+                  value={priced ? formatMoney(priced.subtotalCents) : '—'}
                 />
                 <DataRow
                   label="Shipping"
-                  value={priced ? (shipping === 0 ? 'Free' : formatCents(shipping)) : '—'}
+                  value={priced ? (shipping === 0 ? 'Free' : formatMoney(shipping)) : '—'}
                 />
                 <div className="my-3 border-t border-line" />
                 <DataRow
                   label="Total"
                   emphasis
-                  value={priced ? formatCents(priced.subtotalCents + shipping) : '—'}
+                  value={priced ? formatMoney(priced.subtotalCents + shipping) : '—'}
                 />
               </dl>
+
+              {priced ? <CurrencyDisclosure cents={priced.subtotalCents + shipping} /> : null}
 
               {priced && priced.overStock.length > 0 ? (
                 <p className="mt-4 text-[13px] text-danger">

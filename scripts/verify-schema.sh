@@ -35,15 +35,19 @@ done
 
 echo "==> applying seed catalogue (proves the seed SQL is valid too)"
 psql_q -f "$ROOT/supabase/seed.sql" >/dev/null
-psql_q -t -c "select count(*) from public.products" | tr -d ' ' | grep -qx '12' \
-  || { echo "FAIL: expected 12 seeded products"; exit 1; }
+psql_q -t -c "select count(*) from public.products" | tr -d ' ' | grep -qx '14' \
+  || { echo "FAIL: expected 14 seeded products"; exit 1; }
 psql_q -t -c "select count(*) from public.categories" | tr -d ' ' | grep -qx '4' \
   || { echo "FAIL: expected 4 seeded categories"; exit 1; }
-echo "    12 products, 4 categories"
+psql_q -t -c "select count(*) from public.products where category_id is null" | tr -d ' ' | grep -qx '0' \
+  || { echo "FAIL: some seeded products are uncategorized"; exit 1; }
+psql_q -t -c "select count(*) from public.categories c where not exists (select 1 from public.products p where p.category_id = c.id)" | tr -d ' ' | grep -qx '0' \
+  || { echo "FAIL: at least one category has no products"; exit 1; }
+echo "    14 products, 4 categories"
 
 echo "==> re-applying seed (must be idempotent)"
 psql_q -f "$ROOT/supabase/seed.sql" >/dev/null
-psql_q -t -c "select count(*) from public.products" | tr -d ' ' | grep -qx '12' \
+psql_q -t -c "select count(*) from public.products" | tr -d ' ' | grep -qx '14' \
   || { echo "FAIL: re-running the seed duplicated rows"; exit 1; }
 
 echo "==> running schema + RLS integration checks"

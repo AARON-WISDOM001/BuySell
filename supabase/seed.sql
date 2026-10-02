@@ -11,7 +11,8 @@ insert into public.categories (name, slug) values
   ('Desk', 'desk'),
   ('Workspace', 'workspace'),
   ('Drinkware', 'drinkware')
-on conflict (slug) do nothing;
+on conflict (slug) do update
+set name = excluded.name;
 
 with p (name, slug, description, price_cents, image_slug, category_slug, stock_quantity, is_featured) as (
   values
@@ -42,6 +43,14 @@ with p (name, slug, description, price_cents, image_slug, category_slug, stock_q
     ('Mechanical Keyboard', 'mechanical-keyboard',
      'Hot-swappable, tactile switches.\n\nSolid aluminium case, gasket-mounted so it sounds like a keyboard rather than a desk. Pull the switches out and replace them without a soldering iron.',
      18900, 'mechanical-keyboard', 'desk', 9, false),
+
+    ('Wireless Mouse', 'wireless-mouse',
+     'Compact wireless mouse with a precise optical sensor.\n\nA comfortable, quiet daily driver with a scroll wheel and USB-C charging. Connects over Bluetooth or the included receiver.',
+     5900, 'wireless-mouse', 'desk', 18, false),
+
+    ('USB-C Hub', 'usb-c-hub',
+     'Six-port USB-C hub for a cleaner desk.\n\nAdds USB-A, HDMI, and card-reader connections to a single laptop port. The compact aluminium body travels easily between home and office.',
+     7900, 'usb-c-hub', 'desk', 22, false),
 
     ('Desk Mat', 'desk-mat',
      'Wool felt, 900 × 400mm.\n\nThick enough to take the edge of a keyboard and slow the reflections on a glossy screen. Felt rather than synthetic leather, so it does not flake at the edges after a year.',
@@ -76,4 +85,5 @@ select
 from p
 join public.categories c on c.slug = p.category_slug
 on conflict (slug) do update
-set image_url = excluded.image_url;
+set image_url = excluded.image_url,
+    category_id = excluded.category_id;

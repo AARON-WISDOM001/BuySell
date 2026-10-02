@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from 'next';
 import { DM_Sans } from 'next/font/google';
 import Script from 'next/script';
 import { CartProvider } from '@/components/cart/cart-context';
+import { CurrencyProvider } from '@/components/currency-provider';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { getUser } from '@/lib/supabase/server';
+import { getCurrencyConfig } from '@/lib/currency-config';
 import { NotConfigured } from '@/components/not-configured';
 import { siteUrl, storeName } from '@/lib/env';
 import './globals.css';
@@ -42,6 +44,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let user = null;
+  const currencyConfig = await getCurrencyConfig();
 
   // Configuration problems are surfaced as a setup screen rather than a stack
   // trace, so a fresh clone with no .env.local is immediately understandable.
@@ -76,13 +79,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
 
-        <CartProvider>
-          <SiteHeader user={user} />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <SiteFooter />
-        </CartProvider>
+        <CurrencyProvider config={currencyConfig}>
+          <CartProvider>
+            <SiteHeader user={user} />
+            <main id="main" className="flex-1">
+              {children}
+            </main>
+            <SiteFooter />
+          </CartProvider>
+        </CurrencyProvider>
       </body>
     </html>
   );

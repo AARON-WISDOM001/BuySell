@@ -6,8 +6,8 @@ import { ChevronRight } from 'lucide-react';
 import { Container, SectionHeading } from '@/components/ui/layout';
 import { ProductCard } from '@/components/product/product-card';
 import { ProductPurchasePanel } from '@/components/product/product-purchase-panel';
+import { CurrencyAmount } from '@/components/currency-provider';
 import { getProductBySlug, getRelatedProducts } from '@/lib/catalog';
-import { formatCents } from '@/lib/money';
 
 export async function generateMetadata({
   params,
@@ -92,7 +92,9 @@ export default async function ProductPage({
 
             <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">{product.name}</h1>
 
-            <p className="mt-4 text-xl tabular-nums text-ink">{formatCents(product.priceCents)}</p>
+            <p className="mt-4 text-xl tabular-nums text-ink">
+              <CurrencyAmount cents={product.priceCents} />
+            </p>
 
             <div className="mt-4 flex items-center gap-2 text-[13px]">
               {soldOut ? (
@@ -113,7 +115,7 @@ export default async function ProductPage({
             </div>
 
             <p className="mt-3 text-[13px] leading-relaxed text-ink-muted">
-              Free shipping over {formatCents(15000)}. Payment is not taken at checkout — we will
+              Free shipping over <CurrencyAmount cents={15000} />. Payment is not taken at checkout — we will
               confirm dispatch with you first.
             </p>
 

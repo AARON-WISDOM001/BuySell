@@ -5,7 +5,7 @@ import { resendOrderEmail } from '@/app/actions/orders';
 import { Container, DataRow, Notice, PageHeader } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { formatCents } from '@/lib/money';
+import { CurrencyAmount } from '@/components/currency-provider';
 import { storeName } from '@/lib/env';
 
 type OrderRow = {
@@ -146,22 +146,24 @@ export default async function OrderPage({
               <div>
                 <p className="text-sm text-ink">{item.product_name}</p>
                 <p className="text-[13px] tabular-nums text-ink-muted">
-                  {item.quantity} × {formatCents(item.unit_price_cents)}
+                  {item.quantity} × <CurrencyAmount cents={item.unit_price_cents} />
                 </p>
               </div>
-              <p className="text-sm tabular-nums text-ink">{formatCents(item.subtotal_cents)}</p>
+              <p className="text-sm tabular-nums text-ink">
+                <CurrencyAmount cents={item.subtotal_cents} />
+              </p>
             </li>
           ))}
         </ul>
 
         <dl className="border-t border-line px-6 py-4">
-          <DataRow label="Subtotal" value={formatCents(order.subtotal_cents)} />
+          <DataRow label="Subtotal" value={<CurrencyAmount cents={order.subtotal_cents} />} />
           <DataRow
             label="Shipping"
-            value={order.shipping_cents === 0 ? 'Free' : formatCents(order.shipping_cents)}
+            value={order.shipping_cents === 0 ? 'Free' : <CurrencyAmount cents={order.shipping_cents} />}
           />
           <div className="my-3 border-t border-line" />
-          <DataRow label="Total" emphasis value={formatCents(order.total_cents)} />
+          <DataRow label="Total" emphasis value={<CurrencyAmount cents={order.total_cents} />} />
         </dl>
 
         <div className="border-t border-line px-6 py-4">

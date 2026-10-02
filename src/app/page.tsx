@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Container, SectionHeading } from '@/components/ui/layout';
 import { ProductCard } from '@/components/product/product-card';
+import { CatalogSort } from '@/components/product/catalog-sort';
+import { CurrencyAmount } from '@/components/currency-provider';
 import { SORT_OPTIONS, getCategories, getProducts } from '@/lib/catalog';
 import { FREE_SHIPPING_THRESHOLD_CENTS } from '@/lib/env';
-import { formatCents } from '@/lib/money';
 
 export const metadata: Metadata = {
   title: 'Shop',
@@ -43,8 +44,8 @@ export default async function ShopPage({
             A short list of things that earn their place.
           </h1>
           <p className="mt-6 max-w-xl text-[15px] leading-relaxed text-ink-soft sm:text-base">
-            Twelve products, chosen for how they hold up after a year. Free shipping over{' '}
-            {formatCents(FREE_SHIPPING_THRESHOLD_CENTS)}, and no payment is taken until we have
+            A focused selection chosen for how it holds up after a year. Free shipping over{' '}
+            <CurrencyAmount cents={FREE_SHIPPING_THRESHOLD_CENTS} />, and no payment is taken until we have
             confirmed dispatch.
           </p>
         </Container>
@@ -119,18 +120,7 @@ export default async function ShopPage({
             <label htmlFor="sort" className="text-[13px] text-ink-muted">
               Sort
             </label>
-            <select
-              id="sort"
-              name="sort"
-              defaultValue={sort ?? 'featured'}
-              className="h-8 rounded-xs border border-line bg-surface px-2 text-[13px] transition-colors"
-            >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <CatalogSort options={SORT_OPTIONS} value={sort ?? 'featured'} />
             <noscript>
               <button
                 type="submit"

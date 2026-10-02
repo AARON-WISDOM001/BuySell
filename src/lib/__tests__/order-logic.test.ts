@@ -5,7 +5,12 @@ import {
   errorSummary,
   fieldErrors,
 } from '@/lib/validation';
-import { formatCents, centsToDecimalString } from '@/lib/money';
+import {
+  currencyForCountry,
+  formatCents,
+  formatCentsInCurrency,
+  centsToDecimalString,
+} from '@/lib/money';
 import {
   FREE_SHIPPING_THRESHOLD_CENTS,
   STANDARD_SHIPPING_CENTS,
@@ -157,6 +162,17 @@ describe('money formatting', () => {
     expect(formatCents(24900)).toBe('$249.00');
     expect(formatCents(5)).toBe('$0.05');
     expect(formatCents(123456789)).toBe('$1,234,567.89');
+  });
+
+  it('formats USD cents as naira using a display-only exchange rate', () => {
+    expect(formatCentsInCurrency(24900, 'NGN', 1500, 'en-NG')).toBe('₦373,500');
+  });
+
+  it('selects currencies from country codes', () => {
+    expect(currencyForCountry('NG')).toBe('NGN');
+    expect(currencyForCountry('GB')).toBe('GBP');
+    expect(currencyForCountry('US')).toBe('USD');
+    expect(currencyForCountry('XX')).toBe('USD');
   });
 
   it('converts cents to a decimal string without float drift', () => {

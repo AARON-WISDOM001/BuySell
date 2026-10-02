@@ -5,11 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2 } from 'lucide-react';
 import { useCart } from '@/components/cart/cart-context';
+import { CurrencyDisclosure, useCurrencyFormatter } from '@/components/currency-provider';
 import { priceCartAction, type PricedCartResponse } from '@/app/actions/cart';
 import { Button } from '@/components/ui/button';
 import { QuantityStepper } from '@/components/product/add-to-cart';
 import { Container, DataRow, PageHeader, Notice } from '@/components/ui/layout';
-import { formatCents } from '@/lib/money';
 import { FREE_SHIPPING_THRESHOLD_CENTS, STANDARD_SHIPPING_CENTS } from '@/lib/env';
 
 /**
@@ -23,6 +23,7 @@ import { FREE_SHIPPING_THRESHOLD_CENTS, STANDARD_SHIPPING_CENTS } from '@/lib/en
  */
 export function CartView() {
   const { lines, isReady, remove, changeQuantity, clear } = useCart();
+  const formatMoney = useCurrencyFormatter();
   const [pricedFor, setPricedFor] = useState<{
     signature: string;
     result: PricedCartResponse;
@@ -147,7 +148,7 @@ export function CartView() {
                         {line.name}
                       </Link>
                       <p className="mt-1 text-[13px] tabular-nums text-ink-muted">
-                        {formatCents(line.unitPriceCents)} each
+                        {formatMoney(line.unitPriceCents)} each
                       </p>
                       {line.quantity > line.stockQuantity ? (
                         <p className="mt-1 text-[13px] text-danger">
@@ -157,7 +158,7 @@ export function CartView() {
                     </div>
 
                     <p className="shrink-0 text-[15px] tabular-nums text-ink">
-                      {formatCents(line.unitPriceCents * line.quantity)}
+                      {formatMoney(line.unitPriceCents * line.quantity)}
                     </p>
                   </div>
 
@@ -207,7 +208,7 @@ export function CartView() {
                 label="Subtotal"
                 value={
                   priced ? (
-                    formatCents(priced.subtotalCents)
+                    formatMoney(priced.subtotalCents)
                   ) : (
                     <span className="inline-block h-4 w-16 bg-line" aria-label="Calculating" />
                   )
@@ -219,7 +220,7 @@ export function CartView() {
                   priced
                     ? shipping === 0
                       ? 'Free'
-                      : formatCents(shipping)
+                      : formatMoney(shipping)
                     : (
                         <span className="inline-block h-4 w-10 bg-line" aria-label="Calculating" />
                       )
@@ -231,7 +232,7 @@ export function CartView() {
                 emphasis
                 value={
                   priced ? (
-                    formatCents(priced.subtotalCents + shipping)
+                    formatMoney(priced.subtotalCents + shipping)
                   ) : (
                     <span className="inline-block h-5 w-20 bg-line" aria-label="Calculating" />
                   )
@@ -241,9 +242,11 @@ export function CartView() {
 
             {priced && shipping > 0 ? (
               <p className="mt-3 text-[13px] text-ink-muted">
-                Free shipping on orders over {formatCents(FREE_SHIPPING_THRESHOLD_CENTS)}.
+                Free shipping on orders over {formatMoney(FREE_SHIPPING_THRESHOLD_CENTS)}.
               </p>
             ) : null}
+
+            {priced ? <CurrencyDisclosure cents={priced.subtotalCents + shipping} /> : null}
 
             <Link
               href={blocked ? '/cart' : '/checkout'}
