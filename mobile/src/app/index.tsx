@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Button, Divider, Heading, Notice, Screen } from '@/components/ui';
 import { useCart } from '@/lib/cart';
@@ -11,27 +11,42 @@ export default function Catalog() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
   const { add, count } = useCart();
   const { user } = useSession();
 
-  async function load() {
-    setLoading(true);
-    setError(null);
+  /**
+   * Refetch on mount, and again whenever `reload` asks.
+   *
+   * Every setState happens inside the promise callback rather than in the effect
+   * body. Setting state synchronously in an effect body cascades an extra render
+   * pass on mount, which React 19's lint rule is right to flag.
+   */
+  useEffect(() => {
+    let active = true;
+
     // Public catalogue: the products policy allows anon reads, so no session is
     // needed and the shop works before sign-in.
-    const { data, error: loadError } = await supabase
+    void supabase
       .from('products')
       .select('id, slug, name, description, image_url, price_cents, stock_quantity')
-      .order('name');
+      .order('name')
+      .then(({ data, error: loadError }) => {
+        if (!active) return;
+        setProducts((data ?? []) as Product[]);
+        setError(loadError ? 'Could not load the catalogue. Pull down to try again.' : null);
+        setLoading(false);
+      });
 
-    if (loadError) setError('Could not load the catalogue. Pull down to try again.');
-    else setProducts((data ?? []) as Product[]);
-    setLoading(false);
+    return () => {
+      active = false;
+    };
+  }, [reloadToken]);
+
+  function reload() {
+    setLoading(true);
+    setReloadToken((token) => token + 1);
   }
-
-  useEffect(() => {
-    void load();
-  }, []);
 
   return (
     <Screen>
@@ -39,7 +54,7 @@ export default function Catalog() {
         data={products}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
         ListHeaderComponent={
           <View style={styles.header}>
             <Heading>Curated goods</Heading>

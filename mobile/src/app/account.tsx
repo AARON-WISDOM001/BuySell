@@ -41,7 +41,7 @@ export default function AccountScreen() {
           </Text>
           {count > 0 ? (
             <Text style={styles.muted}>
-              {count} {count === 1 ? 'item is' : 'items are'} waiting in this device's cart.
+              {count} {count === 1 ? 'item is' : 'items are'} waiting in the cart on this device.
             </Text>
           ) : null}
           <View style={styles.row}>

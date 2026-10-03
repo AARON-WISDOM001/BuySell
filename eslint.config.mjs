@@ -25,6 +25,11 @@ const eslintConfig = defineConfig([
     // A package-lock.json sits above this project, so Turbopack tries to use it
     // as the workspace root and warns on every build.
     "../package-lock.json",
+    // The phone app is its own project on its own framework. Next's rules are
+    // wrong for it in ways that cannot be fixed rather than disabled -- jsx-a11y
+    // demands an `alt` prop that React Native's Image does not have, and metro
+    // config is CommonJS. It is linted by eslint-config-expo in mobile/.
+    "mobile/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Heading, Notice, Screen } from '@/components/ui';
 import { useCart, MAX_LINE_QUANTITY } from '@/lib/cart';

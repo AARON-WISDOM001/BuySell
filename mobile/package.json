@@ -18,6 +18,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -26,7 +28,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "verify": "tsc --noEmit && npx expo-doctor"
+    "verify": "tsc --noEmit && npx expo-doctor",
+    "lint": "expo lint"
   },
   "private": true
 }
