@@ -7,6 +7,7 @@ import {
   changeQuantity,
   clearCart,
   isCartEmpty,
+  mergeCartLines,
   normalizeCart,
   priceCart,
   removeLine,
@@ -208,5 +209,66 @@ describe('priceCart', () => {
     const totals = priceCart([product('a', 1999, 10, 3)]);
     expect(Number.isInteger(totals.subtotalCents)).toBe(true);
     expect(totals.subtotalCents).toBe(5997);
+  });
+});
+
+/**
+ * Merging the device cart into the account cart at sign-in.
+ *
+ * The shopper built a cart while signed out, then signed in on a machine that
+ * already had an account cart. Losing either one feels like data loss, so lines
+ * are unioned — but where they collide the server wins, because the account cart
+ * is the one the shopper may have deliberately curated on another device.
+ */
+describe('mergeCartLines', () => {
+  it('keeps the guest cart when the account cart is empty', () => {
+    expect(mergeCartLines([line('a', 2), line('b', 1)], [])).toEqual([
+      line('a', 2),
+      line('b', 1),
+    ]);
+  });
+
+  it('keeps the account cart when the device has nothing', () => {
+    expect(mergeCartLines([], [line('a', 3)])).toEqual([line('a', 3)]);
+  });
+
+  it('unions disjoint carts instead of replacing either one', () => {
+    expect(mergeCartLines([line('a', 1)], [line('b', 4)])).toEqual([
+      line('b', 4),
+      line('a', 1),
+    ]);
+  });
+
+  it('lets the server quantity win on a colliding product', () => {
+    expect(mergeCartLines([line('a', 5)], [line('a', 2)])).toEqual([line('a', 2)]);
+  });
+
+  it('does not sum colliding quantities', () => {
+    // Summing would silently inflate a cart the shopper set deliberately.
+    expect(mergeCartLines([line('a', 5)], [line('a', 5)])).toEqual([line('a', 5)]);
+  });
+
+  it('appends device-only lines after the server cart, in server order', () => {
+    expect(mergeCartLines([line('a', 1)], [line('b', 1), line('c', 1)])).toEqual([
+      line('b', 1),
+      line('c', 1),
+      line('a', 1),
+    ]);
+  });
+
+  it('caps a hostile device cart at the line ceiling', () => {
+    const device = Array.from({ length: MAX_LINES + 25 }, (_, i) => line(`p${i}`, 1));
+    expect(mergeCartLines(device, [])).toHaveLength(MAX_LINES);
+  });
+
+  it('clamps a quantity above the per-line ceiling', () => {
+    expect(mergeCartLines([line('a', 999)], [])).toEqual([
+      line('a', MAX_LINE_QUANTITY),
+    ]);
+  });
+
+  it('returns the server cart unchanged when the device cart is already in it', () => {
+    const server = [line('a', 1), line('b', 1)];
+    expect(mergeCartLines(server, server)).toEqual(server);
   });
 });

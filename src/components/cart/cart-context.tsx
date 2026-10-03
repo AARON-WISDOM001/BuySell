@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
@@ -16,16 +17,22 @@ import {
   clearCart,
   isCartEmpty,
   MAX_LINE_QUANTITY,
+  mergeCartLines,
   removeLine,
   setQuantity,
   type CartLine,
 } from '@/lib/cart';
 import {
+  getCartOwner,
   getCartSnapshot,
   getServerCartSnapshot,
+  setCartOwner,
+  setRemoteWriter,
   subscribeToCart,
   writeCart,
 } from '@/lib/cart-storage';
+import { fetchServerCart, pushServerCart, subscribeServerCart } from '@/lib/cart-server';
+import { createClient } from '@/lib/supabase/client';
 
 /**
  * Client cart state, persisted to localStorage.
@@ -62,6 +69,95 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // paint.
   const lines = useSyncExternalStore(subscribeToCart, getCartSnapshot, getServerCartSnapshot);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
+
+  /**
+   * Bind the cart to the account once the shopper is signed in.
+   *
+   * The localStorage cart is not thrown away. It is what the shopper built while
+   * signed out, and it is also what makes the cart survive a reload before this
+   * effect has run — so it folds into the account cart rather than replacing it.
+   */
+  useEffect(() => {
+    const supabase = createClient();
+    let disposed = false;
+    let unsubscribe: (() => void) | null = null;
+    let attachedUser: string | null = null;
+
+    /**
+     * A failed push must not fail the interaction that triggered it. The local
+     * mirror already holds the shopper's intent, and the next sign-in or reload
+     * reconciles it, so the only thing to do is record it.
+     */
+    function quietly(promise: Promise<unknown>): void {
+      void promise.catch((error) => {
+        console.error('cart sync failed', error);
+      });
+    }
+
+    async function attach(userId: string) {
+      const server = await fetchServerCart(userId);
+      if (disposed || attachedUser !== userId) return;
+
+      // A cart belonging to a different account is replaced, not merged. Merging
+      // would hand one shopper's picks to another on a shared browser.
+      const owner = getCartOwner();
+      const sameCart = owner === null || owner === userId;
+      const merged = sameCart ? mergeCartLines(getCartSnapshot(), server ?? []) : (server ?? []);
+
+      setCartOwner(userId);
+      writeCart(merged, { push: false });
+
+      // Push what the device had that the account cart lacked, so the other
+      // devices see the merge too. Server quantities already win, so this is a
+      // no-op for anything both sides had.
+      if (sameCart) quietly(pushServerCart(userId, merged));
+      if (disposed || attachedUser !== userId) return;
+
+      unsubscribe = subscribeServerCart(userId, (incoming) => {
+        if (disposed || attachedUser !== userId) return;
+        writeCart(incoming, { push: false });
+      });
+    }
+
+    function detach() {
+      unsubscribe?.();
+      unsubscribe = null;
+      attachedUser = null;
+      setRemoteWriter(null);
+      // Ownership is cleared rather than the cart: the cart survives sign-out on
+      // purpose, and the next shopper to sign in merges their own into it.
+      setCartOwner(null);
+    }
+
+    function sync(userId: string | null) {
+      // onAuthStateChange also fires for a token refresh, roughly hourly. Rebuilding
+      // the subscription on each one would re-merge the cart for no reason.
+      if (userId === attachedUser) return;
+
+      detach();
+      if (!userId) return;
+
+      attachedUser = userId;
+      setRemoteWriter((lines) => quietly(pushServerCart(userId, lines)));
+      quietly(attach(userId));
+    }
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (disposed) return;
+      sync(data.session?.user.id ?? null);
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (disposed) return;
+      sync(session?.user.id ?? null);
+    });
+
+    return () => {
+      disposed = true;
+      detach();
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
 
   const add = useCallback((productId: string, quantity = 1) => {
     writeCart(addLine(getCartSnapshot(), productId, quantity));

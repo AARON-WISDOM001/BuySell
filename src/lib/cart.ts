@@ -113,6 +113,33 @@ export function cartCount(cart: CartLine[]): number {
   return cart.reduce((total, line) => total + line.quantity, 0);
 }
 
+/**
+ * Fold a device cart into the account cart at sign-in.
+ *
+ * A shopper who adds items while signed out and then authenticates must not
+ * lose them, and must not lose an account cart they curated on another device
+ * either — so lines are unioned rather than one side winning outright.
+ *
+ * Where the same product appears on both sides the server quantity wins. Adding
+ * them instead would silently inflate a quantity the shopper may have set
+ * deliberately, and the account cart is the one that other devices can see.
+ */
+export function mergeCartLines(device: CartLine[], server: CartLine[]): CartLine[] {
+  // Normalizing the server side defends against a duplicate or out-of-range
+  // row arriving from anywhere other than the constraint that should prevent it.
+  const merged = normalizeCart(server);
+  const taken = new Set(merged.map((line) => line.productId));
+
+  for (const { productId, quantity } of normalizeCart(device)) {
+    if (taken.has(productId)) continue;
+    if (merged.length >= MAX_LINES) break;
+    taken.add(productId);
+    merged.push({ productId, quantity });
+  }
+
+  return merged;
+}
+
 export function isCartEmpty(cart: CartLine[]): boolean {
   return cart.length === 0;
 }
