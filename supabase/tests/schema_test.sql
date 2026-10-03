@@ -370,6 +370,208 @@ select assert_eq('raw error string truncated to 500 chars',
 select assert_eq('email_sent_at left null on failure',
   (select email_sent_at is null from public.orders where customer_email = 'bob@example.com')::text, 'true'::text);
 
+-- ---------------------------------------------------------------------------
+-- Shared cart: the cross-platform cart is the account's, not the device's
+-- ---------------------------------------------------------------------------
+-- This is the check that makes Lesson 3 possible. Two accounts hold the same
+-- publishable key, so RLS is the only thing standing between them.
+
+-- Anon cannot reach a cart at all. A guest cart stays on the device until the
+-- shopper signs in, at which point it merges into the account cart.
+reset role;
+set request.jwt.claim.sub = '';
+set role anon;
+select assert_eq('anon sees no carts', (select count(*) from public.carts)::text, 0::text);
+select assert_eq('anon sees no cart items', (select count(*) from public.cart_items)::text, 0::text);
+
+-- Alice creates her cart and puts two products in it.
+reset role;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+set role authenticated;
+
+insert into public.carts (user_id)
+values ('11111111-1111-1111-1111-111111111111');
+
+insert into public.cart_items (cart_id, product_id, quantity)
+select c.id, p.id, v.qty
+from public.carts c
+cross join (values ('studio-headphones-test', 2), ('desk-lamp-test', 1)) as v(slug, qty)
+join public.products p on p.slug = v.slug
+where c.user_id = '11111111-1111-1111-1111-111111111111';
+
+select assert_eq('alice sees her own cart', (select count(*) from public.carts)::text, 1::text);
+select assert_eq('alice sees her own two lines', (select count(*) from public.cart_items)::text, 2::text);
+select assert_eq('line quantity stored as sent',
+  (select quantity from public.cart_items ci join public.products p on p.id = ci.product_id where p.slug = 'studio-headphones-test')::text, 2::text);
+
+-- A second cart for the same account is refused, so two devices cannot fork it.
+do $$
+begin
+  insert into public.carts (user_id) values ('11111111-1111-1111-1111-111111111111');
+  raise exception 'FAIL: a second cart was created for the same user';
+exception when unique_violation then
+  raise notice '  PASS  %', 'one cart per account (unique user_id)';
+end;
+$$;
+
+-- The same product twice is a quantity change, not a second line.
+do $$
+begin
+  insert into public.cart_items (cart_id, product_id, quantity)
+  select c.id, p.id, 5 from public.carts c join public.products p on p.slug = 'desk-lamp-test'
+  where c.user_id = '11111111-1111-1111-1111-111111111111';
+  raise exception 'FAIL: a duplicate line was created for the same product';
+exception when unique_violation then
+  raise notice '  PASS  %', 'one line per product per cart (unique cart_id, product_id)';
+end;
+$$;
+
+-- The quantity ceiling is the database's, not the UI's.
+do $$
+begin
+  insert into public.cart_items (cart_id, product_id, quantity)
+  select c.id, p.id, 11 from public.carts c join public.products p on p.slug = 'desk-lamp-test'
+  where c.user_id = '11111111-1111-1111-1111-111111111111';
+  raise exception 'FAIL: quantity 11 was accepted';
+exception when check_violation then
+  raise notice '  PASS  %', 'quantity above the per-line ceiling is rejected by the database';
+end;
+$$;
+
+do $$
+begin
+  insert into public.cart_items (cart_id, product_id, quantity)
+  select c.id, p.id, 0 from public.carts c join public.products p on p.slug = 'desk-lamp-test'
+  where c.user_id = '11111111-1111-1111-1111-111111111111';
+  raise exception 'FAIL: quantity 0 was accepted';
+exception when check_violation then
+  raise notice '  PASS  %', 'quantity below 1 is rejected by the database';
+end;
+$$;
+
+-- Capture Alice's real ids as Bob would if he had read them off a shared
+-- screen. Anything derived from a SELECT here would be vacuous: Bob cannot see
+-- Alice's cart, so a query built from public.carts would yield zero rows and
+-- "insert nothing" would read as a pass for the wrong reason.
+select set_config('test.alice_cart', c.id::text, false) from public.carts c
+  where c.user_id = '11111111-1111-1111-1111-111111111111';
+select set_config('test.alice_item', ci.id::text, false) from public.cart_items ci
+  where ci.cart_id = current_setting('test.alice_cart')::uuid and ci.quantity = 2;
+
+-- Bob holds the same publishable key. He must not see, touch, or join Alice's cart.
+reset role;
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+set role authenticated;
+
+select assert_eq('bob sees no carts (alice has one)', (select count(*) from public.carts)::text, 0::text);
+select assert_eq('bob sees no cart items', (select count(*) from public.cart_items)::text, 0::text);
+
+-- Insert is denied by raising, not by returning zero rows. The cart id is
+-- supplied directly, so this cannot pass by inserting nothing.
+do $$
+begin
+  insert into public.cart_items (cart_id, product_id, quantity)
+  values (current_setting('test.alice_cart')::uuid, (select id from public.products where slug = 'desk-lamp-test'), 9);
+  raise exception 'FAIL: bob inserted a line into alice''s cart';
+exception when insufficient_privilege then
+  raise notice '  PASS  %', 'bob cannot insert into a cart he does not own';
+end;
+$$;
+
+do $$
+begin
+  insert into public.carts (user_id) values ('11111111-1111-1111-1111-111111111111');
+  raise exception 'FAIL: bob created a cart owned by alice';
+exception when insufficient_privilege then
+  raise notice '  PASS  %', 'bob cannot create a cart owned by alice';
+end;
+$$;
+
+do $$
+declare n int;
+begin
+  update public.cart_items set quantity = 9 where id = current_setting('test.alice_item')::uuid;
+  get diagnostics n = row_count;
+  perform assert_rows('bob cannot change quantity in a cart he does not own', n);
+end;
+$$;
+
+do $$
+declare n int;
+begin
+  delete from public.cart_items where id = current_setting('test.alice_item')::uuid;
+  get diagnostics n = row_count;
+  perform assert_rows('bob cannot delete lines in a cart he does not own', n);
+end;
+$$;
+
+do $$
+declare n int;
+begin
+  update public.carts set updated_at = now() where id = current_setting('test.alice_cart')::uuid;
+  get diagnostics n = row_count;
+  perform assert_rows('bob cannot update a cart he does not own', n);
+end;
+$$;
+
+do $$
+declare n int;
+begin
+  delete from public.carts where id = current_setting('test.alice_cart')::uuid;
+  get diagnostics n = row_count;
+  perform assert_rows('bob cannot delete a cart he does not own', n);
+end;
+$$;
+
+-- Alice's cart survived all of Bob's attempts, unchanged. Asserted as the
+-- table owner: as Bob these counts are legitimately 0, which would pass for
+-- the wrong reason.
+reset role;
+select assert_eq('alice still has her two lines',
+  (select count(*) from public.cart_items)::text, 2::text);
+select assert_eq('alice line quantity unchanged by bob',
+  (select quantity from public.cart_items where id = current_setting('test.alice_item')::uuid)::text, 2::text);
+
+-- Back to Bob: his own cart works normally, so the policies above are scoping
+-- rather than a blanket denial of everything.
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+set role authenticated;
+
+insert into public.carts (user_id) values ('22222222-2222-2222-2222-222222222222');
+insert into public.cart_items (cart_id, product_id, quantity)
+select c.id, p.id, 1
+from public.carts c join public.products p on p.slug = 'desk-lamp-test'
+where c.user_id = '22222222-2222-2222-2222-222222222222';
+
+select assert_eq('bob has his own cart', (select count(*) from public.carts)::text, 1::text);
+select assert_eq('bob has his own one line', (select count(*) from public.cart_items)::text, 1::text);
+
+-- Deleting the account's cart takes its lines with it.
+reset role;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+set role authenticated;
+
+do $$
+declare n int;
+begin
+  delete from public.carts where user_id = '11111111-1111-1111-1111-111111111111';
+  get diagnostics n = row_count;
+  perform assert_eq('alice can delete her own cart', n::text, 1::text);
+end;
+$$;
+
+select assert_eq('deleting a cart cascades to its lines',
+  (select count(*) from public.cart_items ci
+    where not exists (select 1 from public.carts c where c.id = ci.cart_id))::text, 0::text);
+
+-- Deleting the auth user takes their cart with it, so no cart outlives its owner.
+reset role;
+delete from auth.users where id = '11111111-1111-1111-1111-111111111111';
+select assert_eq('deleting a user cascades to their cart',
+  (select count(*) from public.carts where user_id = '11111111-1111-1111-1111-111111111111')::text, 0::text);
+
+reset role;
+
 \o
 \echo ''
 \echo 'All schema checks passed.'
