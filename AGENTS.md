@@ -33,6 +33,21 @@ npm run verify       # typecheck + lint + test + test:db
 Run `npm run verify` before claiming anything works. It needs Docker for the
 database half; without it, run the other three individually and say so.
 
+The phone app is a separate project with its own toolchain. It is excluded from
+the root `tsconfig.json` and `eslint.config.mjs`, and has its own gates:
+
+```bash
+cd mobile
+npm run typecheck    # tsc --noEmit
+npm run lint         # expo lint (eslint-config-expo)
+npx expo-doctor      # dependency and config sanity
+npx expo start       # dev server
+```
+
+Google OAuth in the app **requires a development build** (`npx expo run:ios` /
+`run:android`, or an EAS build). Expo Go cannot: it installs one fixed app
+scheme, so the authorization code has no `buysell://` URL to return to.
+
 ## Layout
 
 ```
@@ -44,6 +59,8 @@ supabase/
   seed.sql          catalogue, idempotent, safe to re-run
   tests/            integration tests against real Postgres
 scripts/            verify-schema.sh, the database harness
+mobile/src/app/     Expo Router routes; every file is a screen
+mobile/src/lib/     session, cart store, Supabase client, design tokens
 ```
 
 ## Architecture rules
