@@ -68,7 +68,7 @@ export function CartView() {
           </p>
           <Link
             href="/"
-            className="mt-6 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-white transition-colors hover:bg-ink-soft"
+            className="mt-6 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-on-ink transition-colors hover:bg-ink-soft"
           >
             Browse the catalogue
           </Link>
@@ -254,7 +254,7 @@ export function CartView() {
               className={`mt-6 flex h-11 w-full items-center justify-center rounded-xs px-5 text-sm font-medium transition-colors ${
                 blocked
                   ? 'pointer-events-none bg-line text-ink-muted'
-                  : 'bg-ink text-white hover:bg-ink-soft'
+                  : 'bg-ink text-on-ink hover:bg-ink-soft'
               }`}
             >
               Proceed to checkout

@@ -194,7 +194,7 @@ export default async function OrderPage({
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href="/"
-          className="inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-white transition-colors hover:bg-ink-soft"
+          className="inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-on-ink transition-colors hover:bg-ink-soft"
         >
           Continue shopping
         </Link>

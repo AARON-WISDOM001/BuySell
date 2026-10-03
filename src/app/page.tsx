@@ -87,7 +87,7 @@ export default async function ShopPage({
                   aria-current={!category ? 'page' : undefined}
                   className={`inline-flex h-8 items-center rounded-xs px-3 text-[13px] transition-colors duration-150 ${
                     !category
-                      ? 'bg-ink text-white'
+                      ? 'bg-ink text-on-ink'
                       : 'text-ink-soft hover:bg-canvas hover:text-ink'
                   }`}
                 >
@@ -101,7 +101,7 @@ export default async function ShopPage({
                     aria-current={category === item.slug ? 'page' : undefined}
                     className={`inline-flex h-8 items-center rounded-xs px-3 text-[13px] transition-colors duration-150 ${
                       category === item.slug
-                        ? 'bg-ink text-white'
+                        ? 'bg-ink text-on-ink'
                         : 'text-ink-soft hover:bg-canvas hover:text-ink'
                     }`}
                   >
@@ -140,7 +140,7 @@ export default async function ShopPage({
             </p>
             <Link
               href="/"
-              className="mt-6 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-white transition-colors hover:bg-ink-soft"
+              className="mt-6 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-on-ink transition-colors hover:bg-ink-soft"
             >
               Browse everything
             </Link>

@@ -15,7 +15,7 @@ const base =
 
 const variants = {
   /** Primary call to action. Solid ink. */
-  primary: `${base} bg-ink text-white hover:bg-ink-soft`,
+  primary: `${base} bg-ink text-on-ink hover:bg-ink-soft`,
   /** Secondary action. Outline, no fill. */
   secondary: `${base} border border-line-strong bg-surface text-ink hover:bg-canvas`,
   /** Tertiary: text that reads as a link but is a real button. */

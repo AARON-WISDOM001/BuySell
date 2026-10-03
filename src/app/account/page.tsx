@@ -83,7 +83,7 @@ export default async function AccountPage() {
           </p>
           <Link
             href="/"
-            className="mt-5 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-white transition-colors hover:bg-ink-soft"
+            className="mt-5 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-on-ink transition-colors hover:bg-ink-soft"
           >
             Browse the catalogue
           </Link>

@@ -74,7 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="flex min-h-screen flex-col">
         <a
           href="#main"
-          className="focusable-sr-only absolute left-4 top-4 z-50 rounded-xs bg-ink px-4 py-2 text-sm text-white"
+          className="focusable-sr-only absolute left-4 top-4 z-50 rounded-xs bg-ink px-4 py-2 text-sm text-on-ink"
         >
           Skip to content
         </a>

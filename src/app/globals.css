@@ -13,6 +13,7 @@
   --color-canvas: #fafaf9;         /* page background (stone-50) */
   --color-surface: #ffffff;        /* cards, forms */
   --color-ink: #1c1917;            /* primary text + primary CTA (stone-900) */
+  --color-on-ink: #ffffff;          /* foreground on the ink-colored CTA */
   --color-ink-soft: #44403c;       /* secondary text (stone-700) */
   --color-ink-muted: #78716c;      /* 4.6:1 on canvas — metadata, labels */
   --color-line: #e7e5e4;           /* hairline border (stone-200) */
@@ -49,6 +50,7 @@
   --color-canvas: #171613;
   --color-surface: #211f1b;
   --color-ink: #f5f5f4;
+  --color-on-ink: #171613;
   --color-ink-soft: #d6d3d1;
   --color-ink-muted: #a8a29e;
   --color-line: #3d3933;

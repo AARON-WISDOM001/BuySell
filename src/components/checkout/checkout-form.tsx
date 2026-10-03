@@ -81,7 +81,7 @@ export function CheckoutForm({
           </p>
           <Link
             href="/"
-            className="mt-6 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-white transition-colors hover:bg-ink-soft"
+            className="mt-6 inline-flex h-10 items-center rounded-xs bg-ink px-5 text-sm font-medium text-on-ink transition-colors hover:bg-ink-soft"
           >
             Browse the catalogue
           </Link>
@@ -280,7 +280,7 @@ export function CheckoutForm({
                   <li key={line.productId} className="flex items-start gap-3">
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xs border border-line bg-canvas">
                       <Image src={line.imageUrl} alt="" fill sizes="56px" className="object-cover" />
-                      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold tabular-nums text-white">
+                      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold tabular-nums text-on-ink">
                         {line.quantity}
                       </span>
                     </div>
