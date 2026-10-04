@@ -10,6 +10,8 @@ import {
 import type { Session, User } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { isAuthCallbackUrl } from '@/lib/auth-callback';
+import { createSessionFromUrl } from '@/lib/auth-session';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -104,30 +106,31 @@ function useSessionActions(user: User | null) {
     // A cancelled browser sheet is a normal outcome, not something to report.
     if (result.type !== 'success') return;
 
-    const callbackUrl = result.url;
-    const query = Linking.parse(callbackUrl).queryParams ?? {};
-    if (query.error_description) {
-      setError(String(query.error_description));
-      return;
-    }
+    const signInError = await createSessionFromUrl(result.url);
+    if (signInError) setError(signInError);
+  }, []);
 
-    // Implicit flow: the tokens come back in the URL fragment, which
-    // Linking.parse does not expose, so the fragment is read directly.
-    const fragment = new URLSearchParams(callbackUrl.split('#')[1] ?? '');
-    const accessToken = fragment.get('access_token');
-    const refreshToken = fragment.get('refresh_token');
-
-    if (!accessToken || !refreshToken) {
-      setError('Sign-in did not return a session. Please try again.');
-      return;
-    }
-
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
+  /**
+   * Consume a callback that arrives while the app is already running.
+   *
+   * This is the ordinary case, not a rare one: the browser sits on top of the
+   * app during OAuth, so the redirect lands as a warm-start deep link and
+   * `+native-intent` never sees it -- that hook only runs before the first
+   * screen mounts. Without this listener the callback opens the app, nobody
+   * reads it, and the shopper is silently left signed out.
+   *
+   * Cold starts are left to `+native-intent` on purpose; handling the same URL
+   * in both places would exchange it twice.
+   */
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      if (!isAuthCallbackUrl(url)) return;
+      void createSessionFromUrl(url).then((callbackError) => {
+        if (callbackError) setError(callbackError);
+      });
     });
 
-    if (sessionError) setError(sessionError.message);
+    return () => subscription.remove();
   }, []);
 
   const signOut = useCallback(async () => {
