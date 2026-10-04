@@ -1,36 +1,27 @@
 const { getDefaultConfig } = require('expo/metro-config');
-const path = require('path');
 
 const projectRoot = __dirname;
 
-// The cart rules — quantity ceiling, line ceiling, and the merge order used when
-// a guest signs in — live in the Next app as src/lib/cart.ts so both platforms
-// cannot drift apart. Metro refuses to look outside the project root unless it
-// is told to, hence the alias. The module is pure TypeScript with no React or
-// Next imports, which is what makes sharing it safe.
-const sharedLib = path.resolve(projectRoot, '..', 'src', 'lib');
-
 const config = getDefaultConfig(projectRoot);
 
-// `disableHierarchicalLookup` is deliberately NOT set. The Next app above us has
-// its own node_modules with react 19.2.8, which makes expo-doctor report a
-// duplicate react (19.2.3 here, 19.2.8 at ../node_modules). It is a false alarm
-// in this layout: Metro resolves from this project's node_modules first, react
-// is present there, so the parent's copy is never reached. Confirmed by
-// exporting the iOS bundle and counting React's internals marker -- it appears
-// once, not twice, so there is exactly one React in the output.
+// The Next app one directory up has its own node_modules and its own lockfile.
+// This project is nested inside it rather than being an npm workspace, so there
+// are two react trees on disk. That used to make expo-doctor report a duplicate,
+// and it used to be papered over here by pointing watchFolders/extraNodeModules
+// at the web app's src/lib so the phone could import the web's cart rules.
 //
-// The documented fix for a genuine duplicate is npm workspaces, which Expo's
-// monorepo guide assumes. Turning this repo into a workspace would change how
-// the deployed Next.js app resolves its dependencies, so it is not a change to
-// make from inside a mobile feature.
-config.resolver.nodeModulesPaths = [path.join(projectRoot, 'node_modules')];
-
-// Metro refuses to look outside the project root unless told to, so the shared
-// cart module needs both of these.
-config.watchFolders = [sharedLib];
-config.resolver.extraNodeModules = {
-  '@shared': sharedLib,
-};
-
-module.exports = config;
+// That arrangement broke EAS Build, which uploads only this directory, and it
+// was the only reason the duplicate warning was still showing:
+//
+//   Failed to construct transformer: ENOENT: no such file or directory,
+//   stat '<build-root>/src/lib'
+//
+// With the cross-root import gone, expo's automatic monorepo handling applies
+// cleanly: 21/21 doctor checks pass, and the iOS bundle contains exactly one
+// React (counted via its internals marker) rather than two. Nothing is needed
+// here, so this file stays empty on purpose -- do not add cross-root resolution
+// back without re-testing a build that only contains mobile/.
+//
+// The cart rules the phone used to share now live in src/lib/cart-rules.ts.
+// src/lib/__tests__/cart-rules-parity.test.ts fails if the two copies disagree.
+module.exports = getDefaultConfig(projectRoot);

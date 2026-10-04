@@ -14,7 +14,7 @@ import {
   removeLine,
   setQuantity,
   type CartLine,
-} from '@shared/cart';
+} from './cart-rules';
 import { supabase, type Product } from '@/lib/supabase';
 import { useSession } from '@/lib/session';
 
@@ -275,4 +275,4 @@ export function useCart(): CartValue {
 }
 
 /** Re-exported so screens apply the same rules the web and the database do. */
-export { MAX_LINE_QUANTITY } from '@shared/cart';
+export { MAX_LINE_QUANTITY } from './cart-rules';
