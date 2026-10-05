@@ -84,6 +84,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     let disposed = false;
     let unsubscribe: (() => void) | null = null;
+    let poll: ReturnType<typeof setInterval> | null = null;
     let attachedUser: string | null = null;
 
     /**
@@ -117,15 +118,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (sameCart) quietly(pushServerCart(userId, merged, []));
       if (disposed || attachedUser !== userId) return;
 
-      unsubscribe = subscribeServerCart(userId, (incoming) => {
+      /**
+       * Adopt server state, but only when it genuinely differs from what this
+       * tab holds. A poll landing between a tap and its push would otherwise
+       * undo the tap.
+       */
+      const applyIncoming = (incoming: CartLine[], why: string) => {
         if (disposed || attachedUser !== userId) return;
+        if (JSON.stringify(incoming) === JSON.stringify(getCartSnapshot())) return;
+        console.log('[DIAG] refresh', { userId, why, adopted: incoming.length });
         writeCart(incoming, { push: false });
-      });
+      };
+
+      unsubscribe = subscribeServerCart(userId, (incoming) =>
+        applyIncoming(incoming, 'realtime'),
+      );
+
+      // Realtime is best-effort and has been observed not to deliver. A short
+      // poll while the tab is visible makes both directions converge within a
+      // few seconds regardless, which is what the cross-platform cart requires.
+      // ponytail: 4s forever while visible. Slow it to 15s and add a
+      // visibilitychange read if the read quota ever becomes a concern.
+      poll = setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
+        void fetchServerCart(userId).then((incoming) => {
+          if (incoming) applyIncoming(incoming, 'poll');
+        });
+      }, 4000);
     }
 
     function detach() {
       unsubscribe?.();
       unsubscribe = null;
+      if (poll !== null) clearInterval(poll);
+      poll = null;
       attachedUser = null;
       setRemoteWriter(null);
       // Ownership is cleared rather than the cart: the cart survives sign-out on

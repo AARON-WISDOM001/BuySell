@@ -335,20 +335,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     // `carts` as well as `cart_items`: a removal on the website deletes the
     // whole cart, and watching only the items would never report it.
-    const refresh = () => {
-      void readAccountCart(userId).then((next) => adopt(next));
+    const refresh = (why: string) => {
+      void readAccountCart(userId).then((next) => {
+        // Only adopt a genuine change, or a poll landing between a tap and its
+        // push would undo the tap.
+        if (JSON.stringify(next) === JSON.stringify(linesRef.current)) return;
+        console.log('[DIAG] refresh', { userId, why, adopted: next.length });
+        adopt(next);
+      });
     };
     const channel = supabase
       .channel(`cart:${userId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'cart_items' },
-        refresh,
+        () => refresh('realtime:cart_items'),
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'carts' },
-        refresh,
+        () => refresh('realtime:carts'),
       )
       .subscribe((status, error) => {
         // A realtime channel that never connects is otherwise invisible: the
@@ -375,10 +381,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
-      void readAccountCart(userId).then((next) => adopt(next));
+      refresh('foreground');
     });
 
-    return () => subscription.remove();
+    // Realtime is best-effort and has been observed not to deliver. A short
+    // poll while the app is in front makes both directions converge within a
+    // few seconds regardless, which is what the cross-platform cart requires.
+    // ponytail: 4s forever while foregrounded. Slow it to 15s and add
+    // push-notification wakeups if the read quota ever becomes a concern.
+    const poll = setInterval(() => {
+      if (AppState.currentState === 'active') refresh('poll');
+    }, 4000);
+
+    return () => {
+      subscription.remove();
+      clearInterval(poll);
+    };
   }, [userId, adopt]);
 
   // Products are fetched once and joined against the lines. Prices live here
