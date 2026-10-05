@@ -330,20 +330,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
   }, [userId, adopt]);
 
+  /**
+   * Re-read the account cart and adopt it if it genuinely differs.
+   *
+   * Shared by realtime, the foreground resume and the poll, so all three report
+   * which path delivered a change. Only a real difference is adopted: a refresh
+   * landing between a tap and its push would otherwise undo the tap.
+   */
+  const refresh = useCallback(
+    (why: string) => {
+      if (!userId) return;
+      void readAccountCart(userId).then((next) => {
+        if (JSON.stringify(next) === JSON.stringify(linesRef.current)) return;
+        console.log('[DIAG] refresh', { userId, why, adopted: next.length });
+        adopt(next);
+      });
+    },
+    [userId, adopt],
+  );
+
   // Live updates from the other device.
   useEffect(() => {
     if (!userId) return;
     // `carts` as well as `cart_items`: a removal on the website deletes the
     // whole cart, and watching only the items would never report it.
-    const refresh = (why: string) => {
-      void readAccountCart(userId).then((next) => {
-        // Only adopt a genuine change, or a poll landing between a tap and its
-        // push would undo the tap.
-        if (JSON.stringify(next) === JSON.stringify(linesRef.current)) return;
-        console.log('[DIAG] refresh', { userId, why, adopted: next.length });
-        adopt(next);
-      });
-    };
     const channel = supabase
       .channel(`cart:${userId}`)
       .on(
@@ -371,7 +381,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [userId, adopt]);
+  }, [userId, refresh]);
 
   // Realtime is best-effort: a phone that was backgrounded through a change can
   // miss the event entirely. Re-reading on return is what guarantees the two
@@ -397,7 +407,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       subscription.remove();
       clearInterval(poll);
     };
-  }, [userId, adopt]);
+  }, [userId, refresh]);
 
   // Products are fetched once and joined against the lines. Prices live here
   // only for display; they are never sent anywhere.
