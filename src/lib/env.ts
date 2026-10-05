@@ -9,13 +9,25 @@
  */
 
 function required(name: string): string {
-  const value = process.env[name];
+  const value = process.env[name]?.trim();
   if (!value) {
     throw new Error(
       `Missing environment variable ${name}. See .env.example for the full list.`,
     );
   }
   return value;
+}
+
+export function publicEnvOrNull(): {
+  supabaseUrl: string;
+  supabasePublishableKey: string;
+} | null {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+
+  if (!supabaseUrl || !supabasePublishableKey) return null;
+
+  return { supabaseUrl, supabasePublishableKey };
 }
 
 /** Public browser-safe config. Publishable key only — never the secret key. */

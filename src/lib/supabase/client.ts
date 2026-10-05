@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { publicEnv } from '@/lib/env';
+import { publicEnvOrNull } from '@/lib/env';
 
 /**
  * Browser Supabase client.
@@ -9,6 +9,9 @@ import { publicEnv } from '@/lib/env';
  * there is no opportunity to pass the wrong key.
  */
 export function createClient() {
-  const { supabaseUrl, supabasePublishableKey } = publicEnv();
+  const config = publicEnvOrNull();
+  if (!config) return null;
+
+  const { supabaseUrl, supabasePublishableKey } = config;
   return createBrowserClient(supabaseUrl, supabasePublishableKey);
 }
