@@ -111,7 +111,10 @@ async function ensureCartId(userId: string): Promise<string | null> {
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (existing) return existing.id as string;
+  if (existing) {
+    console.log('[DIAG] ensureCartId: existing cart', { userId, cartId: existing.id });
+    return existing.id as string;
+  }
 
   const { data: created, error } = await supabase
     .from('carts')
@@ -119,7 +122,10 @@ async function ensureCartId(userId: string): Promise<string | null> {
     .select('id')
     .single();
 
-  if (!error) return created.id as string;
+  if (!error) {
+    console.log('[DIAG] ensureCartId: created cart', { userId, cartId: created.id });
+    return created.id as string;
+  }
 
   // Lost the race, or the insert was refused. Read whatever row exists now.
   const { data: raced } = await supabase
@@ -127,6 +133,17 @@ async function ensureCartId(userId: string): Promise<string | null> {
     .select('id')
     .eq('user_id', userId)
     .maybeSingle();
+
+  // This branch used to return silently, which is how a permanently broken sync
+  // hid: nothing on screen changed and nothing was logged.
+  console.log('[DIAG] ensureCartId: INSERT FAILED', {
+    userId,
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+    recoveredCartId: raced ? (raced.id as string) : null,
+  });
 
   return raced ? (raced.id as string) : null;
 }
@@ -144,6 +161,12 @@ async function ensureCartId(userId: string): Promise<string | null> {
  * silently erases whatever the website added in the meantime.
  */
 async function pushAccountCart(userId: string, lines: CartLine[]): Promise<void> {
+  console.log('[DIAG] push: start', {
+    userId,
+    lineCount: lines.length,
+    lines: lines.map((l) => `${l.productId.slice(0, 8)}x${l.quantity}`).join(','),
+  });
+
   const cartId = await ensureCartId(userId);
   if (!cartId) throw new Error('Could not open the account cart for this sign-in.');
 
@@ -156,7 +179,15 @@ async function pushAccountCart(userId: string, lines: CartLine[]): Promise<void>
       })),
       { onConflict: 'cart_id,product_id' },
     );
-    if (error) throw error;
+    if (error) {
+      console.log('[DIAG] push: UPSERT FAILED', {
+        cartId,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      });
+      throw error;
+    }
   }
 
   const keep = new Set(lines.map((line) => line.productId));
@@ -169,10 +200,26 @@ async function pushAccountCart(userId: string, lines: CartLine[]): Promise<void>
     .filter((row) => !keep.has(row.product_id as string))
     .map((row) => row.id as string);
 
+  console.log('[DIAG] push: server rows', {
+    cartId,
+    serverCount: current?.length ?? 0,
+    willDelete: stale.length,
+  });
+
   if (stale.length > 0) {
     const { error } = await supabase.from('cart_items').delete().in('id', stale);
-    if (error) throw error;
+    if (error) {
+      console.log('[DIAG] push: DELETE FAILED', {
+        cartId,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      });
+      throw error;
+    }
   }
+
+  console.log('[DIAG] push: done', { cartId });
 }
 
 async function readAccountCart(userId: string): Promise<CartLine[]> {
@@ -200,7 +247,16 @@ async function attachAccountCart(
   owner: string | null,
 ): Promise<CartLine[]> {
   const server = await readAccountCart(userId);
-  return cartForSignIn(deviceLines, server, owner, userId);
+  const merged = cartForSignIn(deviceLines, server, owner, userId);
+  console.log('[DIAG] attach', {
+    userId,
+    owner,
+    serverCount: server.length,
+    deviceCount: deviceLines.length,
+    mergedCount: merged.length,
+    replacedNotMerged: owner !== null && owner !== userId,
+  });
+  return merged;
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -245,6 +301,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const next = reducer(linesRef.current, action);
       linesRef.current = next;
       dispatch(action);
+      // willPush:false is the "session never established, cart is local-only"
+      // case, which looks identical to working sync from the UI alone.
+      console.log('[DIAG] action', {
+        type: action.type,
+        userId,
+        willPush: Boolean(userId),
+      });
       if (!userId) return;
       void pushAccountCart(userId, next).catch((error) => {
         console.error('cart sync failed', error);
