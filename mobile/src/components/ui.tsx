@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Pressable, type StyleProp, type ViewStyle } from 'react-native';
-import { radius, theme } from '@/lib/theme';
+import { radius, useTheme } from '@/lib/theme';
 
 /**
  * The handful of primitives the screens share.
@@ -16,15 +16,18 @@ export function Screen({
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
-  return <View style={[styles.screen, style]}>{children}</View>;
+  const { theme } = useTheme();
+  return <View style={[createStyles(theme).screen, style]}>{children}</View>;
 }
 
 export function Heading({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.heading}>{children}</Text>;
+  const { theme } = useTheme();
+  return <Text style={createStyles(theme).heading}>{children}</Text>;
 }
 
 export function Muted({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.muted}>{children}</Text>;
+  const { theme } = useTheme();
+  return <Text style={createStyles(theme).muted}>{children}</Text>;
 }
 
 /** An error the shopper can act on, rather than a raw failure string. */
@@ -35,6 +38,8 @@ export function Notice({
   tone?: 'danger' | 'muted';
   children: React.ReactNode;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <Text style={[styles.notice, tone === 'muted' && styles.noticeMuted]}>{children}</Text>
   );
@@ -51,6 +56,8 @@ export function Button({
   variant?: 'primary' | 'secondary';
   disabled?: boolean;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <Pressable
       accessibilityRole="button"
@@ -73,10 +80,12 @@ export function Button({
 
 /** Hairline row border, matching the site's 1px lines. */
 export function Divider() {
-  return <View style={styles.divider} />;
+  const { theme } = useTheme();
+  return <View style={createStyles(theme).divider} />;
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
+  return StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: theme.canvas,
@@ -108,7 +117,7 @@ const styles = StyleSheet.create({
     borderColor: theme.line,
   },
   button: {
-    backgroundColor: theme.ink,
+    backgroundColor: theme.accent,
     borderRadius: radius,
     paddingVertical: 14,
     paddingHorizontal: 18,
@@ -137,4 +146,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: theme.line,
   },
-});
+  });
+}

@@ -2,9 +2,11 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Button, Heading, Notice, Screen } from '@/components/ui';
 import { useCart } from '@/lib/cart';
 import { useSession } from '@/lib/session';
-import { theme } from '@/lib/theme';
+import { useTheme, type Theme } from '@/lib/theme';
 
 export default function AccountScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { user, isReady, signIn, signOut, error } = useSession();
   const { count } = useCart();
 
@@ -55,7 +57,8 @@ export default function AccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: Theme) {
+  return StyleSheet.create({
   padded: {
     padding: 20,
     gap: 16,
@@ -80,4 +83,5 @@ const styles = StyleSheet.create({
   row: {
     paddingTop: 4,
   },
-});
+  });
+}

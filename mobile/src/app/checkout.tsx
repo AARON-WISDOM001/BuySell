@@ -13,7 +13,7 @@ import { Button, Heading, Notice, Screen } from '@/components/ui';
 import { useCart } from '@/lib/cart';
 import { useSession } from '@/lib/session';
 import { money, supabase } from '@/lib/supabase';
-import { theme } from '@/lib/theme';
+import { useTheme, type Theme } from '@/lib/theme';
 
 /**
  * Checkout, ending in place_order().
@@ -46,6 +46,8 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const { user } = useSession();
   const { priced, subtotalCents, isEmpty, clear, overStock } = useCart();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [values, setValues] = useState<Record<string, string>>({
     email: user?.email ?? '',
@@ -159,7 +161,8 @@ export default function CheckoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: Theme) {
+  return StyleSheet.create({
   flex: { flex: 1 },
   padded: {
     padding: 20,
@@ -197,4 +200,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.ink,
   },
-});
+  });
+}

@@ -3,13 +3,15 @@ import { Image, ScrollView, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Heading, Notice, Screen } from '@/components/ui';
 import { useCart, MAX_LINE_QUANTITY } from '@/lib/cart';
-import { money, supabase, type Product } from '@/lib/supabase';
-import { theme } from '@/lib/theme';
+import { money, resolveProductImageUrl, supabase, type Product } from '@/lib/supabase';
+import { useTheme, type Theme } from '@/lib/theme';
 
 export default function ProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { add } = useCart();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
@@ -49,9 +51,9 @@ export default function ProductScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.padded}>
-        {product.image_url ? (
+        {resolveProductImageUrl(product.image_url) ? (
           <Image
-            source={{ uri: product.image_url }}
+            source={{ uri: resolveProductImageUrl(product.image_url) ?? undefined }}
             style={styles.image}
             resizeMode="cover"
             accessibilityIgnoresInvertColors
@@ -77,7 +79,8 @@ export default function ProductScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: Theme) {
+  return StyleSheet.create({
   padded: {
     padding: 20,
     gap: 16,
@@ -98,4 +101,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: theme.inkSoft,
   },
-});
+  });
+}

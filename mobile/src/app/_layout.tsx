@@ -1,34 +1,41 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { SessionProvider } from '@/lib/session';
 import { CartProvider } from '@/lib/cart';
-import { theme } from '@/lib/theme';
+import { ThemeProvider, useTheme } from '@/lib/theme';
+import { SiteHeader } from '@/components/site-header';
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <SessionProvider>
-        <CartProvider>
-          <StatusBar style="dark" />
-          <Stack
-            screenOptions={{
-              headerStyle: { backgroundColor: theme.canvas },
-              headerTitleStyle: { color: theme.ink },
-              headerTintColor: theme.ink,
-              headerShadowVisible: false,
-              contentStyle: { backgroundColor: theme.canvas },
-            }}
-          >
-            <Stack.Screen name="index" options={{ title: 'BuySell' }} />
-            <Stack.Screen name="product/[id]" options={{ title: 'Product' }} />
-            <Stack.Screen name="cart" options={{ title: 'Cart' }} />
-            <Stack.Screen name="checkout" options={{ title: 'Checkout' }} />
-            <Stack.Screen name="order/[id]" options={{ title: 'Order confirmed' }} />
-            <Stack.Screen name="account" options={{ title: 'Account' }} />
-          </Stack>
-        </CartProvider>
-      </SessionProvider>
+      <ThemeProvider>
+        <SessionProvider>
+          <CartProvider>
+            <AppShell />
+          </CartProvider>
+        </SessionProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
+  );
+}
+
+function AppShell() {
+  const { theme, isDark } = useTheme();
+
+  return (
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.canvas }}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <SiteHeader />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.canvas } }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="about" />
+        <Stack.Screen name="product/[id]" />
+        <Stack.Screen name="cart" />
+        <Stack.Screen name="checkout" />
+        <Stack.Screen name="order/[id]" />
+        <Stack.Screen name="account" />
+      </Stack>
+    </SafeAreaView>
   );
 }

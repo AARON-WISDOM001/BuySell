@@ -72,4 +72,24 @@ export type Product = {
   stock_quantity: number;
 };
 
-export const money = (cents: number): string => `$${(cents / 100).toFixed(2)}`;
+const NGN_PER_USD = 1331.28;
+
+const moneyFormatter = new Intl.NumberFormat('en-NG', {
+  style: 'currency',
+  currency: 'NGN',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export const money = (cents: number): string => moneyFormatter.format((cents / 100) * NGN_PER_USD);
+
+const storefrontOrigin = process.env.EXPO_PUBLIC_SITE_URL ?? 'https://buysell-sigma.vercel.app';
+
+export function resolveProductImageUrl(imageUrl: string | null): string | null {
+  if (!imageUrl) return null;
+  try {
+    return new URL(imageUrl, storefrontOrigin).toString();
+  } catch {
+    return imageUrl;
+  }
+}

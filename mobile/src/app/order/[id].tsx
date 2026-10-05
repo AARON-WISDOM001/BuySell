@@ -2,12 +2,14 @@ import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Heading, Screen } from '@/components/ui';
 import { useSession } from '@/lib/session';
-import { theme } from '@/lib/theme';
+import { useTheme, type Theme } from '@/lib/theme';
 
 export default function OrderConfirmed() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useSession();
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <Screen style={styles.padded}>
@@ -21,7 +23,8 @@ export default function OrderConfirmed() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: Theme) {
+  return StyleSheet.create({
   padded: {
     padding: 20,
     gap: 16,
@@ -36,4 +39,5 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: theme.inkSoft,
   },
-});
+  });
+}
