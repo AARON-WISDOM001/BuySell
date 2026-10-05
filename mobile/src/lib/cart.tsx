@@ -350,7 +350,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
         { event: '*', schema: 'public', table: 'carts' },
         refresh,
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        // A realtime channel that never connects is otherwise invisible: the
+        // cart still works on this device and simply never hears from the other
+        // one. 'CHANNEL_ERROR'/'TIMED_OUT' here is the whole explanation for a
+        // cart that syncs in one direction and not the other.
+        console.log('[DIAG] realtime', {
+          userId,
+          status,
+          error: error?.message ?? null,
+        });
+      });
 
     return () => {
       void supabase.removeChannel(channel);
