@@ -3,11 +3,23 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Divider, Heading, Notice, Screen } from '@/components/ui';
 import { useCart } from '@/lib/cart';
 import { money } from '@/lib/supabase';
-import { theme } from '@/lib/theme';
+import { useTheme, type Theme } from '@/lib/theme';
 
 export default function CartScreen() {
-  const { priced, subtotalCents, isEmpty, overStock, changeQuantity, remove, count, clear } =
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+  const { lines, priced, subtotalCents, isEmpty, overStock, changeQuantity, remove, count, clear } =
     useCart();
+
+  /**
+   * Render from `lines`, not from `priced`.
+   *
+   * `priced` drops any line whose product has not loaded, so gating the list on it
+   * meant a slow or failed catalogue read produced a cart with a heading, a count
+   * and a zero subtotal, and no items at all — indistinguishable from an empty
+   * cart. The quantity lives in `lines`, so the line and its stepper must too.
+   */
+  const details = new Map(priced.map((line) => [line.productId, line]));
 
   if (isEmpty) {
     return (
@@ -38,27 +50,32 @@ export default function CartScreen() {
         ) : null}
 
         <View style={styles.lines}>
-          {priced.map((line) => (
+          {lines.map((line) => {
+            const info = details.get(line.productId);
+            const name = info?.name ?? 'Loading…';
+            return (
             <View key={line.productId}>
               <View style={styles.line}>
                 <View style={styles.lineText}>
-                  <Text style={styles.name}>{line.name}</Text>
-                  <Text style={styles.price}>{money(line.unitPriceCents)} each</Text>
+                  <Text style={styles.name}>{name}</Text>
+                  <Text style={styles.price}>
+                    {info ? `${money(info.unitPriceCents)} each` : ''}
+                  </Text>
                 </View>
 
                 <View style={styles.stepper}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Decrease ${line.name}`}
+                    accessibilityLabel={`Decrease ${name}`}
                     onPress={() => changeQuantity(line.productId, -1)}
                     style={styles.stepperButton}
                   >
                     <Text style={styles.stepperLabel}>−</Text>
                   </Pressable>
-                  <Text style={styles.quantity}>{line.quantity}</Text>
+                  <Text style={styles.quantity}>{info?.quantity ?? line.quantity}</Text>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Increase ${line.name}`}
+                    accessibilityLabel={`Increase ${name}`}
                     onPress={() => changeQuantity(line.productId, 1)}
                     style={styles.stepperButton}
                   >
@@ -66,7 +83,7 @@ export default function CartScreen() {
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Remove ${line.name}`}
+                    accessibilityLabel={`Remove ${name}`}
                     onPress={() => remove(line.productId)}
                     style={styles.remove}
                   >
@@ -76,7 +93,8 @@ export default function CartScreen() {
               </View>
               <Divider />
             </View>
-          ))}
+            );
+          })}
         </View>
 
         <View style={styles.total}>
@@ -97,7 +115,8 @@ export default function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(theme: Theme) {
+  return StyleSheet.create({
   padded: {
     padding: 20,
     gap: 16,
@@ -198,4 +217,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-});
+  });
+}

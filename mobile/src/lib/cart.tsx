@@ -417,8 +417,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       .from('products')
       .select('id, slug, name, description, image_url, price_cents, stock_quantity')
       .order('name')
-      .then(({ data }) => {
-        if (active && data) setProducts(data as Product[]);
+      .then(({ data, error }) => {
+        if (!active) return;
+        // A failed catalogue read used to be invisible: `products` stayed empty,
+        // every cart line failed to resolve, and the cart rendered as a heading
+        // and a zero subtotal with no items in it.
+        if (error) {
+          console.log('[DIAG] products FAILED', { code: error.code, message: error.message });
+          return;
+        }
+        console.log('[DIAG] products loaded', { count: data?.length ?? 0 });
+        setProducts((data ?? []) as Product[]);
       });
     return () => {
       active = false;
