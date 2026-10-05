@@ -128,6 +128,22 @@ export function clearCart(): CartLine[] {
   return [];
 }
 
+/**
+ * The ids present in `before` and absent from `after` — the removals a push is
+ * allowed to delete on the account cart.
+ *
+ * This is the whole safety mechanism for two devices sharing one cart. A device
+ * that has not yet seen the other device's realtime update still pushes its own
+ * lines, but it only ever asks the server to delete ids it genuinely took out
+ * itself. Deleting "everything the server holds that I do not have" instead makes
+ * a stale view erase the other device's items, which is how the shared cart used
+ * to lose products depending on who pushed last.
+ */
+export function removedIds(before: CartLine[], after: CartLine[]): string[] {
+  const kept = new Set(after.map((line) => line.productId));
+  return before.filter((line) => !kept.has(line.productId)).map((line) => line.productId);
+}
+
 /** Total number of individual units in the cart, for the header badge. */
 export function cartCount(cart: CartLine[]): number {
   return cart.reduce((total, line) => total + line.quantity, 0);

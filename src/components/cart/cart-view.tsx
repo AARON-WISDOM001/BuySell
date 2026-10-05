@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2 } from 'lucide-react';
@@ -54,6 +54,28 @@ export function CartView() {
 
   const priced = pricedFor?.signature === signature ? pricedFor.result : null;
 
+  /**
+   * Product details from the last successful pricing, keyed by id.
+   *
+   * Quantities are read from `lines`, not from `priced`, so a stepper tap shows
+   * immediately. Only the names, prices and stock — which have to come from the
+   * database — wait for the round-trip. Rendering the list from `priced` instead
+   * meant every `+` and `-` blanked the whole cart for the length of a network
+   * round-trip, which reads as "the button does nothing".
+   */
+  const catalog = useMemo(() => {
+    const map = new Map<string, PricedCartResponse['lines'][number]>();
+    for (const line of pricedFor?.result.lines ?? []) map.set(line.productId, line);
+    return map;
+  }, [pricedFor]);
+
+  const rows = lines.flatMap((line) => {
+    const product = catalog.get(line.productId);
+    return product ? [{ ...product, quantity: line.quantity }] : [];
+  });
+
+  const units = priced?.totalUnits ?? lines.reduce((total, line) => total + line.quantity, 0);
+
   if (!isReady) {
     return <CartSkeleton />;
   }
@@ -93,7 +115,7 @@ export function CartView() {
     <Container className="py-12 sm:py-16">
       <PageHeader
         eyebrow="Your cart"
-        title={`${priced?.totalUnits ?? lines.length} ${priced?.totalUnits === 1 ? 'item' : 'items'}`}
+        title={`${units} ${units === 1 ? 'item' : 'items'}`}
         action={
           <Button variant="ghost" size="sm" onClick={clear}>
             Clear cart
@@ -123,7 +145,7 @@ export function CartView() {
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-16">
         <div aria-busy={!priced}>
           <ul className="divide-y divide-line border-y border-line">
-            {priced?.lines.map((line) => (
+            {rows.map((line) => (
               <li key={line.productId} className="flex gap-4 py-6 sm:gap-6">
                 <Link
                   href={`/products/${line.slug}`}

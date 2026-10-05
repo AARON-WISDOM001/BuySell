@@ -19,6 +19,7 @@ import {
   MAX_LINE_QUANTITY,
   mergeCartLines,
   removeLine,
+  removedIds,
   setQuantity,
   type CartLine,
 } from '@/lib/cart';
@@ -79,6 +80,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
    */
   useEffect(() => {
     const supabase = createClient();
+    if (!supabase) return () => {};
+
     let disposed = false;
     let unsubscribe: (() => void) | null = null;
     let attachedUser: string | null = null;
@@ -109,8 +112,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       // Push what the device had that the account cart lacked, so the other
       // devices see the merge too. Server quantities already win, so this is a
-      // no-op for anything both sides had.
-      if (sameCart) quietly(pushServerCart(userId, merged));
+      // no-op for anything both sides had. Nothing is removed: a merge only ever
+      // adds.
+      if (sameCart) quietly(pushServerCart(userId, merged, []));
       if (disposed || attachedUser !== userId) return;
 
       unsubscribe = subscribeServerCart(userId, (incoming) => {
@@ -138,7 +142,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!userId) return;
 
       attachedUser = userId;
-      setRemoteWriter((lines) => quietly(pushServerCart(userId, lines)));
+      setRemoteWriter((lines, removed) => quietly(pushServerCart(userId, lines, removed)));
       quietly(attach(userId));
     }
 
@@ -165,7 +169,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clear = useCallback(() => {
-    writeCart(clearCart());
+    const before = getCartSnapshot();
+    const after = clearCart();
+    writeCart(after, { removed: removedIds(before, after) });
     setLastAdded(null);
   }, []);
 
@@ -182,7 +188,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         writeCart(setQuantity(getCartSnapshot(), productId, quantity)),
       changeQuantity: (productId, delta) =>
         writeCart(changeQuantity(getCartSnapshot(), productId, delta)),
-      remove: (productId) => writeCart(removeLine(getCartSnapshot(), productId)),
+      // Only the ids this write actually removed are deleted on the account
+      // cart. Removing used to push a wholesale replace, so it also deleted
+      // whatever another device had added.
+      remove: (productId) => {
+        const before = getCartSnapshot();
+        const after = removeLine(before, productId);
+        writeCart(after, { removed: removedIds(before, after) });
+      },
       clear,
       lastAdded,
     }),

@@ -75,8 +75,15 @@ export function getServerCartSnapshot(): CartLine[] {
  * realtime event or the result of a merge — so it is not echoed straight back to
  * the server. Without it a realtime delivery would re-push itself and the two
  * devices would trade the same change back and forth forever.
+ *
+ * `removed` lists the ids this write took out of the cart. The server deletes
+ * exactly those and nothing else, so a device can remove what it removed without
+ * also removing what another device added in the meantime.
  */
-export function writeCart(lines: CartLine[], options: { push?: boolean } = {}): void {
+export function writeCart(
+  lines: CartLine[],
+  options: { push?: boolean; removed?: string[] } = {},
+): void {
   cache = lines;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
@@ -85,7 +92,7 @@ export function writeCart(lines: CartLine[], options: { push?: boolean } = {}): 
     // session, it just will not survive a reload.
   }
   emit();
-  if (options.push !== false) remoteWriter?.(lines);
+  if (options.push !== false) remoteWriter?.(lines, options.removed ?? []);
 }
 
 /**
@@ -120,7 +127,7 @@ export function setCartOwner(userId: string | null): void {
  * free of any Supabase dependency and remains usable — and testable — with the
  * cart alone.
  */
-type RemoteWriter = (lines: CartLine[]) => void;
+type RemoteWriter = (lines: CartLine[], removed: string[]) => void;
 
 let remoteWriter: RemoteWriter | null = null;
 

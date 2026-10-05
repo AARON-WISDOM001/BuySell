@@ -172,3 +172,25 @@ describe('cart rules parity between web and mobile', () => {
     expect(mobile.normalizeCart(big)).toEqual(web.normalizeCart(big));
   });
 });
+describe('removedIds parity', () => {
+  it('agrees on what a write removed', () => {
+    // Both platforms decide which server rows a push may delete using this. If
+    // they disagreed, one device would delete rows the other meant to keep.
+    for (const before of carts) {
+      for (const after of carts) {
+        expect(mobile.removedIds(before, after)).toEqual(web.removedIds(before, after));
+      }
+    }
+  });
+
+  it('never reports a removal for a quantity-only change', () => {
+    for (const base of carts) {
+      for (const id of ids) {
+        for (const amount of [1, 2, 10]) {
+          const after = web.setQuantity(base, id, amount);
+          expect(mobile.removedIds(base, after)).toEqual([]);
+        }
+      }
+    }
+  });
+});

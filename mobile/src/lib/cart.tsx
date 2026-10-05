@@ -14,6 +14,7 @@ import {
   addLine,
   changeQuantity,
   removeLine,
+  removedIds,
   setQuantity,
   type CartLine,
 } from './cart-rules';
@@ -89,13 +90,6 @@ export type PricedLine = CartLine & {
 const CartContext = createContext<CartValue | null>(null);
 
 /**
- * Make the account cart exactly `lines`.
- *
- * Reconciles with an upsert plus a delete of what went away, rather than
- * clearing and reinserting: clearing would briefly empty the cart for every other
- * device watching it, and would lose it entirely if the app died midway.
- */
-/**
  * Find the caller's cart, creating it on first use.
  *
  * The insert races when the phone and the website both open the account for the
@@ -149,22 +143,31 @@ async function ensureCartId(userId: string): Promise<string | null> {
 }
 
 /**
- * Make the account cart exactly `lines`.
+ * Fold this device's changes into the account cart.
  *
- * Reconciles with an upsert plus a delete of what went away, rather than
- * clearing and reinserting: clearing would briefly empty the cart for every other
- * device watching it, and would lose it entirely if the app died midway.
+ * `lines` are upserted and only `removed` is deleted. This used to delete every
+ * server row missing from `lines`, which made the push a wholesale replace: a
+ * device holding a stale view — one that had not yet received the website's
+ * realtime update — silently erased whatever the website had added. Two devices
+ * signed in could therefore only ever hold whichever pushed last, so the cart
+ * never converged, it lost items.
+ *
+ * Deletion is explicit. The caller knows which ids it removed; the server only
+ * honours that list.
  *
  * `lines` must be the device's live view of the cart, not a snapshot from an
- * earlier render — see the note on `linesRef` in CartProvider. This function
- * deletes every server row missing from what it is given, so a stale `lines`
- * silently erases whatever the website added in the meantime.
+ * earlier render — see the note on `linesRef` in CartProvider.
  */
-async function pushAccountCart(userId: string, lines: CartLine[]): Promise<void> {
+async function pushAccountCart(
+  userId: string,
+  lines: CartLine[],
+  removed: string[] = [],
+): Promise<void> {
   console.log('[DIAG] push: start', {
     userId,
     lineCount: lines.length,
     lines: lines.map((l) => `${l.productId.slice(0, 8)}x${l.quantity}`).join(','),
+    removing: removed.length,
   });
 
   const cartId = await ensureCartId(userId);
@@ -190,24 +193,12 @@ async function pushAccountCart(userId: string, lines: CartLine[]): Promise<void>
     }
   }
 
-  const keep = new Set(lines.map((line) => line.productId));
-  const { data: current } = await supabase
-    .from('cart_items')
-    .select('id, product_id')
-    .eq('cart_id', cartId);
-
-  const stale = (current ?? [])
-    .filter((row) => !keep.has(row.product_id as string))
-    .map((row) => row.id as string);
-
-  console.log('[DIAG] push: server rows', {
-    cartId,
-    serverCount: current?.length ?? 0,
-    willDelete: stale.length,
-  });
-
-  if (stale.length > 0) {
-    const { error } = await supabase.from('cart_items').delete().in('id', stale);
+  if (removed.length > 0) {
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', cartId)
+      .in('product_id', removed);
     if (error) {
       console.log('[DIAG] push: DELETE FAILED', {
         cartId,
@@ -268,11 +259,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /**
    * The cart as this device currently believes it, readable synchronously.
    *
-   * A push has to describe the cart as it is *now*, because pushAccountCart
-   * deletes every server row missing from what it is given. Reading `lines` from
-   * the render closure meant two taps in the same tick both computed their push
-   * from the same pre-tap value: the first was thrown away, and the stale
-   * snapshot deleted whatever the website had added since. Remote writes and
+   * A push has to describe the cart as it is *now*, so two taps in the same tick
+   * do not both compute from the same pre-tap value and lose the first. Reading
+   * `lines` from the render closure meant exactly that. Remote writes and
    * foreground re-reads update this too, so it is the freshest view available.
    *
    * ponytail: a push already in flight can still be overtaken by a tap landing
@@ -298,18 +287,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Computed from the live mirror and written back before dispatching, so a
       // second tap in this same tick builds on the first rather than on the
       // state before it.
-      const next = reducer(linesRef.current, action);
+      const before = linesRef.current;
+      const next = reducer(before, action);
       linesRef.current = next;
       dispatch(action);
+      // What this tap took out, and only that, is deleted on the account cart.
+      const removed = removedIds(before, next);
       // willPush:false is the "session never established, cart is local-only"
       // case, which looks identical to working sync from the UI alone.
       console.log('[DIAG] action', {
         type: action.type,
         userId,
         willPush: Boolean(userId),
+        removing: removed.length,
       });
       if (!userId) return;
-      void pushAccountCart(userId, next).catch((error) => {
+      void pushAccountCart(userId, next, removed).catch((error) => {
         console.error('cart sync failed', error);
       });
     },
@@ -326,7 +319,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       ownerRef.current = userId;
       adopt(merged);
       // Push the merge so the website sees the lines this device brought with it.
-      void pushAccountCart(userId, merged).catch((error) => {
+      // Nothing is removed: a merge only ever adds.
+      void pushAccountCart(userId, merged, []).catch((error) => {
         console.error('cart merge push failed', error);
       });
     });

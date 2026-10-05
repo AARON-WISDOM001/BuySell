@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { publicEnv } from '@/lib/env';
+import { publicEnvOrNull } from '@/lib/env';
 import type { CartLine } from '@/lib/cart';
 
 /**
@@ -21,9 +21,23 @@ import type { CartLine } from '@/lib/cart';
 /** One client for the tab. Creating one per call would spawn a new realtime connection. */
 let client: SupabaseClient | null = null;
 
-function getClient(): SupabaseClient {
+/**
+ * Override the client, for tests only.
+ *
+ * The sync rules here are destructive by nature — a wrong delete loses another
+ * device's items — so they are worth asserting on directly rather than only
+ * through the UI. Passing null restores the lazy singleton.
+ */
+export function __setServerCartClient(next: SupabaseClient | null): void {
+  client = next;
+}
+
+function getClient(): SupabaseClient | null {
   if (!client) {
-    const { supabaseUrl, supabasePublishableKey } = publicEnv();
+    const config = publicEnvOrNull();
+    if (!config) return null;
+
+    const { supabaseUrl, supabasePublishableKey } = config;
     client = createClient(supabaseUrl, supabasePublishableKey, {
       auth: { persistSession: true, autoRefreshToken: true },
     });
@@ -42,6 +56,7 @@ type ItemRow = { product_id: string; quantity: number };
  */
 async function ensureCartId(userId: string): Promise<string | null> {
   const supabase = getClient();
+  if (!supabase) return null;
 
   const { data: existing } = await supabase
     .from('carts')
@@ -72,6 +87,7 @@ async function ensureCartId(userId: string): Promise<string | null> {
 /** The caller's cart as cart lines. Returns null when there is no cart yet. */
 export async function fetchServerCart(userId: string): Promise<CartLine[] | null> {
   const supabase = getClient();
+  if (!supabase) return null;
 
   const { data, error } = await supabase
     .from('carts')
@@ -88,18 +104,29 @@ export async function fetchServerCart(userId: string): Promise<CartLine[] | null
 }
 
 /**
- * Make the account cart exactly `lines`.
+ * Fold this device's changes into the account cart.
  *
- * Reconciles by upserting the lines that were added and deleting the ones that
- * went, rather than clearing and reinserting: a wholesale delete would briefly
- * empty the cart for every other device watching it, and would lose the cart if
- * the tab died midway.
+ * `lines` are upserted and only `removed` is deleted. This used to delete every
+ * server row missing from `lines`, which made the push a wholesale replace: a
+ * device holding a stale view — one that had not yet received another device's
+ * realtime update — silently erased whatever that other device had added. With
+ * two devices signed in, the cart could only ever hold whichever one pushed
+ * last, so cart sync across devices did not converge, it oscillated and lost
+ * items.
+ *
+ * Deletion is therefore explicit. The caller knows which ids it removed; the
+ * server only honours that list.
  */
-export async function pushServerCart(userId: string, lines: CartLine[]): Promise<void> {
+export async function pushServerCart(
+  userId: string,
+  lines: CartLine[],
+  removed: string[] = [],
+): Promise<void> {
   const cartId = await ensureCartId(userId);
   if (!cartId) return;
 
   const supabase = getClient();
+  if (!supabase) return;
 
   if (lines.length > 0) {
     const { error } = await supabase.from('cart_items').upsert(
@@ -113,18 +140,12 @@ export async function pushServerCart(userId: string, lines: CartLine[]): Promise
     if (error) throw error;
   }
 
-  const keep = new Set(lines.map((line) => line.productId));
-  const { data: current } = await supabase
-    .from('cart_items')
-    .select('id, product_id')
-    .eq('cart_id', cartId);
-
-  const stale = (current ?? [])
-    .filter((row) => !keep.has(row.product_id as string))
-    .map((row) => row.id as string);
-
-  if (stale.length > 0) {
-    const { error } = await supabase.from('cart_items').delete().in('id', stale);
+  if (removed.length > 0) {
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('cart_id', cartId)
+      .in('product_id', removed);
     if (error) throw error;
   }
 }
@@ -132,6 +153,8 @@ export async function pushServerCart(userId: string, lines: CartLine[]): Promise
 /** Delete the account cart wholesale. Used by the order confirmation page. */
 export async function clearServerCart(userId: string): Promise<void> {
   const supabase = getClient();
+  if (!supabase) return;
+
   const { error } = await supabase.from('carts').delete().eq('user_id', userId);
   if (error) throw error;
 }
@@ -158,6 +181,8 @@ export function subscribeServerCart(
   onChange: (lines: CartLine[]) => void,
 ): () => void {
   const supabase = getClient();
+  if (!supabase) return () => {};
+
   const refresh = () => {
     void fetchServerCart(userId).then((lines) => lines && onChange(lines));
   };
