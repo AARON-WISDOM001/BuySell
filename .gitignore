@@ -44,3 +44,6 @@ next-env.d.ts
 # Supabase CLI link state (pooler URL, project ref, no secrets but machine-local)
 supabase/.temp
 .superpowers/
+
+# Expo local cache
+.expo/
