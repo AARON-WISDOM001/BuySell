@@ -87,8 +87,9 @@ function createStyles(theme: Theme) {
   },
   image: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 4 / 5,
     borderRadius: 2,
+    overflow: 'hidden',
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.line,
