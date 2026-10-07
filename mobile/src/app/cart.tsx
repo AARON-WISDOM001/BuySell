@@ -1,4 +1,5 @@
 import { Link } from 'expo-router';
+import { Minus, Plus, Trash2 } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Divider, Heading, Notice, Screen } from '@/components/ui';
 import { useCart } from '@/lib/cart';
@@ -70,7 +71,7 @@ export default function CartScreen() {
                     onPress={() => changeQuantity(line.productId, -1)}
                     style={styles.stepperButton}
                   >
-                    <Text style={styles.stepperLabel}>−</Text>
+                    <Minus size={15} strokeWidth={1.5} color={theme.ink} />
                   </Pressable>
                   <Text style={styles.quantity}>{info?.quantity ?? line.quantity}</Text>
                   <Pressable
@@ -79,7 +80,7 @@ export default function CartScreen() {
                     onPress={() => changeQuantity(line.productId, 1)}
                     style={styles.stepperButton}
                   >
-                    <Text style={styles.stepperLabel}>+</Text>
+                    <Plus size={15} strokeWidth={1.5} color={theme.ink} />
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -87,6 +88,7 @@ export default function CartScreen() {
                     onPress={() => remove(line.productId)}
                     style={styles.remove}
                   >
+                    <Trash2 size={14} strokeWidth={1.5} color={theme.danger} />
                     <Text style={styles.removeLabel}>Remove</Text>
                   </Pressable>
                 </View>
@@ -165,14 +167,10 @@ function createStyles(theme: Theme) {
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.lineStrong,
     backgroundColor: theme.surface,
-  },
-  stepperLabel: {
-    fontSize: 18,
-    color: theme.ink,
-    lineHeight: 22,
   },
   quantity: {
     minWidth: 24,
@@ -181,6 +179,9 @@ function createStyles(theme: Theme) {
     color: theme.ink,
   },
   remove: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 4,
   },
   removeLabel: {

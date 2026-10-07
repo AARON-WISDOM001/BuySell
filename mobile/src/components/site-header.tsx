@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
+import { ShoppingBag, Sun, Moon, UserRound } from 'lucide-react-native';
 import { useCart } from '@/lib/cart';
 import { useTheme, type Theme } from '@/lib/theme';
 
@@ -31,7 +32,7 @@ export function SiteHeader() {
             onPress={() => router.push('/account')}
             style={styles.plainAction}
           >
-            <Text style={styles.iconText}>↗</Text>
+            <UserRound size={16} strokeWidth={1.5} color={theme.inkSoft} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -40,7 +41,11 @@ export function SiteHeader() {
             onPress={toggleTheme}
             style={styles.squareAction}
           >
-            <Text style={styles.iconText}>{isDark ? '☼' : '☾'}</Text>
+            {isDark ? (
+              <Sun size={17} strokeWidth={1.75} color={theme.inkSoft} />
+            ) : (
+              <Moon size={17} strokeWidth={1.75} color={theme.inkSoft} />
+            )}
           </Pressable>
           <Pressable
             accessibilityRole="link"
@@ -48,7 +53,7 @@ export function SiteHeader() {
             onPress={() => router.push('/cart')}
             style={styles.cartAction}
           >
-            <Text style={styles.iconText}>▱</Text>
+            <ShoppingBag size={18} strokeWidth={1.5} color={theme.inkSoft} />
             {count > 0 ? <Text style={styles.cartCount}>{count}</Text> : null}
           </Pressable>
         </View>
@@ -123,6 +128,7 @@ function createStyles(theme: Theme) {
       height: 40,
       alignItems: 'center',
       justifyContent: 'center',
+      borderRadius: 2,
       borderWidth: 1,
       borderColor: theme.line,
       backgroundColor: theme.surface,
@@ -134,11 +140,6 @@ function createStyles(theme: Theme) {
       justifyContent: 'center',
       flexDirection: 'row',
       gap: 2,
-    },
-    iconText: {
-      color: theme.inkSoft,
-      fontSize: 19,
-      lineHeight: 24,
     },
     cartCount: {
       color: theme.ink,
@@ -181,6 +182,7 @@ function createStyles(theme: Theme) {
       marginLeft: 'auto',
       alignSelf: 'center',
       paddingHorizontal: 11,
+      borderRadius: 2,
       borderWidth: 1,
       borderColor: theme.line,
       backgroundColor: theme.surface,

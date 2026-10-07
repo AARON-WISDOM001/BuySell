@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { ChevronDown, Plus } from 'lucide-react-native';
 import { Heading, Notice, Screen } from '@/components/ui';
 import { useCart } from '@/lib/cart';
 import { money, resolveProductImageUrl, supabase, type Product } from '@/lib/supabase';
@@ -65,7 +66,7 @@ export default function Catalog() {
   const { theme } = useTheme();
   const { width: viewportWidth } = useWindowDimensions();
   const cardWidth = (viewportWidth - 38 - 20) / 2;
-  const styles = createStyles(theme, cardWidth * 1.25, cardWidth < 142);
+  const styles = createStyles(theme, cardWidth < 142);
   const params = useLocalSearchParams<{ q?: string; category?: string; sort?: string }>();
   const router = useRouter();
   const search = typeof params.q === 'string' ? params.q.trim().toLowerCase() : '';
@@ -196,7 +197,7 @@ export default function Catalog() {
                 <Text style={styles.sortLabel}>Sort</Text>
                 <Pressable accessibilityRole="button" onPress={() => setSortOpen(true)} style={styles.sortSelect}>
                   <Text style={styles.sortValue}>{selectedSort.label}</Text>
-                  <Text style={styles.sortChevron}>⌄</Text>
+                  <ChevronDown size={16} strokeWidth={1.75} color={theme.inkSoft} />
                 </Pressable>
                 {activeCategory || search ? (
                   <Pressable onPress={() => router.replace('/')} style={styles.clearButton}>
@@ -247,7 +248,8 @@ export default function Catalog() {
                 onPress={() => add(item.id)}
                 style={[styles.addButton, item.stock_quantity <= 0 && styles.addDisabled]}
               >
-                <Text style={styles.addLabel}>＋ Add</Text>
+                <Plus size={14} strokeWidth={1.75} color={theme.ink} />
+                <Text style={styles.addLabel}>Add</Text>
               </Pressable>
             </View>
           </View>
@@ -289,7 +291,7 @@ function CategoryChip({
   );
 }
 
-function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
+function createStyles(theme: Theme, narrowCard: boolean) {
   return StyleSheet.create({
   list: {
     paddingHorizontal: 19,
@@ -332,6 +334,7 @@ function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
   },
   categoryChip: {
     minHeight: 32,
+    borderRadius: 2,
     paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -362,6 +365,7 @@ function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.lineStrong,
     backgroundColor: theme.surface,
@@ -369,10 +373,6 @@ function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
   sortValue: {
     color: theme.ink,
     fontSize: 12,
-  },
-  sortChevron: {
-    color: theme.inkSoft,
-    fontSize: 16,
   },
   clearButton: {
     marginLeft: 'auto',
@@ -391,8 +391,8 @@ function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
   },
   imageFrame: {
     width: '100%',
-    height: imageHeight,
-    minHeight: 220,
+    aspectRatio: 4 / 5,
+    borderRadius: 2,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
@@ -407,6 +407,7 @@ function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
     position: 'absolute',
     left: 10,
     top: 10,
+    borderRadius: 2,
     paddingHorizontal: 8,
     paddingVertical: 5,
     color: theme.onInk,
@@ -419,6 +420,7 @@ function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
     position: 'absolute',
     left: 10,
     top: 10,
+    borderRadius: 2,
     paddingHorizontal: 8,
     paddingVertical: 5,
     color: theme.accentInk,
@@ -464,6 +466,7 @@ function createStyles(theme: Theme, imageHeight: number, narrowCard: boolean) {
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: narrowCard ? 'flex-end' : 'auto',
+    borderRadius: 2,
     borderWidth: 1,
     borderColor: theme.lineStrong,
     backgroundColor: theme.surface,
