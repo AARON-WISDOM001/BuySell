@@ -18,6 +18,43 @@ import type { CartLine } from '@/lib/cart';
  */
 
 
+/**
+ * What the cart's sync indicator may report.
+ *
+ * Four states, one per cause of "not on the other device". The labels below
+ * spell the cause out because every one of them looks like a working cart when
+ * the indicator is absent — that invisibility is the bug being fixed.
+ */
+export type CartSyncStatus =
+  /** Signed out: there is no account cart, so this device is all there is. */
+  | 'local'
+  /** Signed in but the environment is missing, so sync is disabled. */
+  | 'unavailable'
+  /** Signed in; every write reaches the account cart. */
+  | 'synced'
+  /** Signed in, but the last push or pull failed. Still retrying. */
+  | 'error';
+
+/** What the badge shows for each state. Kept beside the type, not in the UI. */
+export const CART_SYNC_COPY: Record<CartSyncStatus, { label: string; detail: string }> = {
+  local: {
+    label: 'Local cart — sign in to sync',
+    detail: 'Items stay on this device until you sign in.',
+  },
+  unavailable: {
+    label: 'Sync unavailable',
+    detail: 'The app is not connected to the shared cart. Check the Supabase configuration.',
+  },
+  synced: {
+    label: 'Synced across devices',
+    detail: 'Signed in — items appear on your other devices.',
+  },
+  error: {
+    label: 'Sync issue — retrying',
+    detail: 'The last sync failed. Your items are safe on this device.',
+  },
+};
+
 /** One client for the tab. Creating one per call would spawn a new realtime connection. */
 let client: SupabaseClient | null = null;
 

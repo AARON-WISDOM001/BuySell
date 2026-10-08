@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2 } from 'lucide-react';
 import { useCart } from '@/components/cart/cart-context';
+import { CartSyncBadge } from '@/components/cart/cart-sync-badge';
 import { CurrencyDisclosure, useCurrencyFormatter } from '@/components/currency-provider';
 import { priceCartAction, type PricedCartResponse } from '@/app/actions/cart';
 import { Button } from '@/components/ui/button';
@@ -122,6 +123,10 @@ export function CartView() {
           </Button>
         }
       />
+
+      <div className="mt-4">
+        <CartSyncBadge />
+      </div>
 
       {priced && priced.unavailable.length > 0 ? (
         <div className="mt-6">

@@ -32,7 +32,13 @@ import {
   subscribeToCart,
   writeCart,
 } from '@/lib/cart-storage';
-import { fetchServerCart, pushServerCart, subscribeServerCart } from '@/lib/cart-server';
+import {
+  fetchServerCart,
+  pushServerCart,
+  subscribeServerCart,
+  type CartSyncStatus,
+} from '@/lib/cart-server';
+import { publicEnvOrNull } from '@/lib/env';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -59,6 +65,13 @@ export type CartContextValue = {
   clear: () => void;
   /** The last product added, for the transient "added" confirmation. */
   lastAdded: string | null;
+  /**
+   * Where this cart lives. `local` while signed out, `unavailable` when the
+   * environment is missing, `synced` once attached, `error` after a failed
+   * push or pull. The cart page and header render it — every one of those
+   * states looks like a working cart without the badge.
+   */
+  syncStatus: CartSyncStatus;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -70,6 +83,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // paint.
   const lines = useSyncExternalStore(subscribeToCart, getCartSnapshot, getServerCartSnapshot);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<CartSyncStatus>('local');
+  // Derived at render from a pure env read. Setting this inside the effect was
+  // a cascading render, which react-hooks/set-state-in-effect rightly rejects.
+  const envMissing = publicEnvOrNull() === null;
 
   /**
    * Bind the cart to the account once the shopper is signed in.
@@ -93,9 +110,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
      * reconciles it, so the only thing to do is record it.
      */
     function quietly(promise: Promise<unknown>): void {
-      void promise.catch((error) => {
-        console.error('cart sync failed', error);
-      });
+      void promise
+        .then(() => {
+          if (!disposed) setSyncStatus('synced');
+        })
+        .catch((error) => {
+          console.error('cart sync failed', error);
+          if (!disposed) setSyncStatus('error');
+        });
     }
 
     async function attach(userId: string) {
@@ -141,9 +163,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // visibilitychange read if the read quota ever becomes a concern.
       poll = setInterval(() => {
         if (document.visibilityState !== 'visible') return;
-        void fetchServerCart(userId).then((incoming) => {
-          if (incoming) applyIncoming(incoming, 'poll');
-        });
+        void fetchServerCart(userId)
+          .then((incoming) => {
+            if (disposed) return;
+            if (incoming) applyIncoming(incoming, 'poll');
+            setSyncStatus('synced');
+          })
+          .catch((error) => {
+            console.error('cart sync failed', error);
+            if (!disposed) setSyncStatus('error');
+          });
       }, 4000);
     }
 
@@ -157,6 +186,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Ownership is cleared rather than the cart: the cart survives sign-out on
       // purpose, and the next shopper to sign in merges their own into it.
       setCartOwner(null);
+      // Unmount already disposed, so this only fires on a real detach.
+      if (!disposed) setSyncStatus('local');
     }
 
     function sync(userId: string | null) {
@@ -168,7 +199,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!userId) return;
 
       attachedUser = userId;
+      // The remote writer is installed, so writes reach the account cart from
+      // here on — that is what `synced` claims, not the completion of the pull.
       setRemoteWriter((lines, removed) => quietly(pushServerCart(userId, lines, removed)));
+      setSyncStatus('synced');
       quietly(attach(userId));
     }
 
@@ -224,8 +258,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       },
       clear,
       lastAdded,
+      syncStatus: envMissing ? 'unavailable' : syncStatus,
     }),
-    [lines, add, clear, lastAdded],
+    [lines, add, clear, lastAdded, syncStatus, envMissing],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

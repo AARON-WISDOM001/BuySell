@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
 import { LogOut, UserRound } from 'lucide-react';
 import { CartButton } from '@/components/cart/cart-button';
+import { CartSyncBadge } from '@/components/cart/cart-sync-badge';
 import { NavLinks } from '@/components/nav-links';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { storeName } from '@/lib/env';
@@ -72,6 +73,9 @@ export function SiteHeader({ user }: { user: User | null }) {
           )}
 
           <ThemeToggle />
+          <div className="hidden sm:block">
+            <CartSyncBadge />
+          </div>
           <CartButton />
         </div>
       </div>
