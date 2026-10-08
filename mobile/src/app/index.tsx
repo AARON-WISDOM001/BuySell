@@ -65,8 +65,11 @@ export default function Catalog() {
   const { add } = useCart();
   const { theme } = useTheme();
   const { width: viewportWidth } = useWindowDimensions();
-  const cardWidth = (viewportWidth - 38 - 20) / 2;
-  const styles = createStyles(theme, cardWidth < 142);
+  // Screen gutters are 20px on each side (styles.list); the inter-column gap is
+  // 10px (styles.gridRow). The width only feeds the narrow-card breakpoint —
+  // the cards themselves size with flex, not this number.
+  const cardWidth = (viewportWidth - 50) / 2;
+  const styles = createStyles(theme, cardWidth);
   const params = useLocalSearchParams<{ q?: string; category?: string; sort?: string }>();
   const router = useRouter();
   const search = typeof params.q === 'string' ? params.q.trim().toLowerCase() : '';
@@ -219,8 +222,9 @@ export default function Catalog() {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Link href={`/product/${item.id}`} style={styles.productLink}>
-              <View style={styles.imageFrame}>
+            <Link href={`/product/${item.id}`} asChild>
+              <Pressable style={styles.productLink}>
+                <View style={styles.imageFrame}>
                 {resolveProductImageUrl(item.image_url) ? (
                   <Image
                     source={{ uri: resolveProductImageUrl(item.image_url) ?? undefined }}
@@ -240,6 +244,7 @@ export default function Catalog() {
               </View>
               <Text style={styles.categoryName}>{item.categoryName ?? ''}</Text>
               <Text numberOfLines={2} style={styles.name}>{item.name}</Text>
+              </Pressable>
             </Link>
             <View style={styles.priceRow}>
               <Text adjustsFontSizeToFit minimumFontScale={0.78} numberOfLines={1} style={styles.price}>
@@ -295,16 +300,17 @@ function CategoryChip({
   );
 }
 
-function createStyles(theme: Theme, narrowCard: boolean) {
+function createStyles(theme: Theme, cardWidth: number) {
+  const narrowCard = cardWidth < 142;
   return StyleSheet.create({
   list: {
-    paddingHorizontal: 19,
+    paddingHorizontal: 20,
     paddingTop: 43,
     paddingBottom: 32,
     gap: 36,
   },
   gridRow: {
-    gap: 20,
+    gap: 10,
   },
   catalogIntro: {
     gap: 9,
@@ -323,8 +329,8 @@ function createStyles(theme: Theme, narrowCard: boolean) {
     fontSize: 14,
   },
   filters: {
-    marginHorizontal: -19,
-    paddingHorizontal: 19,
+    marginHorizontal: -20,
+    paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 1,
     borderBottomWidth: 1,
@@ -392,6 +398,7 @@ function createStyles(theme: Theme, narrowCard: boolean) {
     minWidth: 0,
   },
   productLink: {
+    width: '100%',
   },
   imageFrame: {
     width: '100%',
