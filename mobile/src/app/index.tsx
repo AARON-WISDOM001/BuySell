@@ -16,7 +16,7 @@ import { ChevronDown, Plus } from 'lucide-react-native';
 import { Heading, Notice, Screen } from '@/components/ui';
 import { useCart } from '@/lib/cart';
 import { money, resolveProductImageUrl, supabase, type Product } from '@/lib/supabase';
-import { useTheme, type Theme } from '@/lib/theme';
+import { useTheme, radius, radiusMd, type Theme } from '@/lib/theme';
 
 type CatalogProduct = Product & {
   is_featured: boolean;
@@ -229,9 +229,13 @@ export default function Catalog() {
                   />
                 ) : null}
                 {item.stock_quantity <= 0 ? (
-                  <Text style={styles.stockBadge}>SOLD OUT</Text>
+                  <View style={styles.stockBadgeFrame}>
+                    <Text style={styles.stockBadgeText}>SOLD OUT</Text>
+                  </View>
                 ) : item.stock_quantity <= 3 ? (
-                  <Text style={styles.lowStockBadge}>{item.stock_quantity} LEFT</Text>
+                  <View style={styles.lowStockBadgeFrame}>
+                    <Text style={styles.lowStockBadgeText}>{item.stock_quantity} LEFT</Text>
+                  </View>
                 ) : null}
               </View>
               <Text style={styles.categoryName}>{item.categoryName ?? ''}</Text>
@@ -392,7 +396,7 @@ function createStyles(theme: Theme, narrowCard: boolean) {
   imageFrame: {
     width: '100%',
     aspectRatio: 4 / 5,
-    borderRadius: 2,
+    borderRadius: radiusMd,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
@@ -400,31 +404,39 @@ function createStyles(theme: Theme, narrowCard: boolean) {
     backgroundColor: theme.canvas,
   },
   image: {
-    width: '100%',
-    height: '100%',
+      ...StyleSheet.absoluteFill,
+    width: undefined,
+    height: undefined,
+    borderRadius: radiusMd,
   },
-  stockBadge: {
+  stockBadgeFrame: {
     position: 'absolute',
     left: 10,
     top: 10,
-    borderRadius: 2,
+    borderRadius: radius,
+    overflow: 'hidden',
     paddingHorizontal: 8,
     paddingVertical: 5,
-    color: theme.onInk,
     backgroundColor: theme.ink,
+  },
+  stockBadgeText: {
+    color: theme.onInk,
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
-  lowStockBadge: {
+  lowStockBadgeFrame: {
     position: 'absolute',
     left: 10,
     top: 10,
-    borderRadius: 2,
+    borderRadius: radius,
+    overflow: 'hidden',
     paddingHorizontal: 8,
     paddingVertical: 5,
-    color: theme.accentInk,
     backgroundColor: theme.surface,
+  },
+  lowStockBadgeText: {
+    color: theme.accentInk,
     fontSize: 10,
     fontWeight: '600',
   },

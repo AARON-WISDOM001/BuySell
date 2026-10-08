@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Heading, Notice, Screen } from '@/components/ui';
 import { useCart, MAX_LINE_QUANTITY } from '@/lib/cart';
 import { money, resolveProductImageUrl, supabase, type Product } from '@/lib/supabase';
-import { useTheme, type Theme } from '@/lib/theme';
+import { radiusMd, useTheme, type Theme } from '@/lib/theme';
 
 export default function ProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,12 +52,14 @@ export default function ProductScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.padded}>
         {resolveProductImageUrl(product.image_url) ? (
-          <Image
-            source={{ uri: resolveProductImageUrl(product.image_url) ?? undefined }}
-            style={styles.image}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
+          <View style={styles.imageFrame}>
+            <Image
+              source={{ uri: resolveProductImageUrl(product.image_url) ?? undefined }}
+              style={styles.image}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+            />
+          </View>
         ) : null}
 
         <Heading>{product.name}</Heading>
@@ -85,14 +87,20 @@ function createStyles(theme: Theme) {
     padding: 20,
     gap: 16,
   },
-  image: {
+  imageFrame: {
     width: '100%',
     aspectRatio: 4 / 5,
-    borderRadius: 2,
+    borderRadius: radiusMd,
     overflow: 'hidden',
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.line,
+  },
+  image: {
+    ...StyleSheet.absoluteFill,
+    width: undefined,
+    height: undefined,
+    borderRadius: radiusMd,
   },
   price: {
     fontSize: 18,

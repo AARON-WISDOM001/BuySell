@@ -86,5 +86,9 @@ export function useTheme() {
 /** Near-square corners, per the site's Swiss styling. */
 export const radius = 2;
 
+/** Larger steps, matching --radius-sm/--radius-md on the website. */
+export const radiusSm = 3;
+export const radiusMd = 5;
+
 /** Motion is 200-250ms on the web; keep native transitions in the same band. */
 export const duration = 200;
