@@ -218,7 +218,7 @@ export function subscribeServerCart(
   onChange: (lines: CartLine[]) => void,
 ): () => void {
   const supabase = getClient();
-  if (!supabase) return () => {};
+  if (!supabase || !userId) return () => {};
 
   const refresh = () => {
     void fetchServerCart(userId).then((lines) => lines && onChange(lines));

@@ -183,9 +183,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       poll = null;
       attachedUser = null;
       setRemoteWriter(null);
-      // Ownership is cleared rather than the cart: the cart survives sign-out on
-      // purpose, and the next shopper to sign in merges their own into it.
-      setCartOwner(null);
+      // The stored cart stays, and so does its owner: the owner is what lets the
+      // next sign-in tell "the same shopper returning" (merge) from "a different
+      // account on this browser" (replace). Clearing it here folded one
+      // account's cart into the next account to sign in.
       // Unmount already disposed, so this only fires on a real detach.
       if (!disposed) setSyncStatus('local');
     }
